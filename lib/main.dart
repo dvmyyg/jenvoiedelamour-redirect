@@ -2,63 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// ajouté le 08/04/2025 pour la partie bidirectionnelle
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
 
 // Détermine le rôle de l'appareil
 const bool isReceiver = false; // ← Xiaomi 2 = true, Xiaomi 1 = false
 
+// ajouté le 08/04/2025 pour la partie bidirectionnelle
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(const MyApp());
+  final deviceId = await getDeviceId();
+  runApp(MyApp(deviceId: deviceId));
 }
 
+// ajouté le 08/04/2025 pour la partie bidirectionnelle
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+  final String deviceId;
+  const MyApp({super.key, required this.deviceId});
+// ajouté le 08/04/2025 pour la partie bidirectionnelle
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: isReceiver ? 'Récepteur' : 'Émetteur',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: isReceiver ? const ReceiverScreen() : const SenderScreen(),
+      home: SenderScreen(deviceId: deviceId),
     );
   }
 }
 
+
+// ajouté le 08/04/2025 pour la partie bidirectionnelle
 // === ÉMETTEUR === //
 class SenderScreen extends StatelessWidget {
-  const SenderScreen({super.key});
-
-  void sendMessageToXiaomi2() async {
-    await FirebaseFirestore.instance
-        .collection('devices')
-        .doc('xiaomi2')
-        .set({'showIcon': true});
-    print("✅ showIcon: true envoyé à Xiaomi 2");
-
-    // Réinitialise après 2 secondes
-    await Future.delayed(const Duration(seconds: 2));
-    await FirebaseFirestore.instance
-        .collection('devices')
-        .doc('xiaomi2')
-        .set({'showIcon': false});
-    print("🔁 showIcon: false envoyé à Xiaomi 2");
-  }
-
+  final String deviceId;
+  const SenderScreen({super.key, required this.deviceId});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Téléphone A (Émetteur)')),
-      body: const Center(
-        child: Text("Clique sur le bouton pour déclencher l’icône sur Xiaomi 2."),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: sendMessageToXiaomi2,
-        tooltip: 'Envoyer',
-        child: const Icon(Icons.send),
+      appBar: AppBar(title: const Text('Émetteur')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Bienvenue dans Jela MVP'),
+            Text('📱 Device ID : $deviceId'),
+          ],
+        ),
       ),
     );
   }
@@ -107,4 +97,21 @@ class _ReceiverScreenState extends State<ReceiverScreen> {
       ),
     );
   }
+}
+
+
+// ajouté le 08/04/2025 pour la partie bidirectionnelle
+Future<String> getDeviceId() async {
+  final prefs = await SharedPreferences.getInstance();
+  String? deviceId = prefs.getString('deviceId');
+
+  if (deviceId == null) {
+    deviceId = const Uuid().v4();
+    await prefs.setString('deviceId', deviceId);
+    print('🆕 Nouveau deviceId généré : $deviceId');
+  } else {
+    print('📲 DeviceId existant : $deviceId');
+  }
+
+  return deviceId;
 }

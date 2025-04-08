@@ -38,6 +38,10 @@ dependencies:
   firebase_messaging: ^14.7.0
   firebase_analytics: ^10.8.0
 
+  # ajout le 08/04/2025 pour la communication bidirectionnelle.
+  shared_preferences: ^2.2.2
+  uuid: ^4.0.0
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
