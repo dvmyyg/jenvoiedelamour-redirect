@@ -8,12 +8,16 @@ import 'package:uuid/uuid.dart';
 
 
 // Détermine le rôle de l'appareil
-const bool isReceiver = false; // ← Xiaomi 2 = true, Xiaomi 1 = false
+const bool isReceiver = true; // ← Xiaomi B = true, Xiaomi A = false
 
 // ajouté le 08/04/2025 pour la partie bidirectionnelle
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final deviceId = await getDeviceId();
+  // ajouté le 08/04/2025 pour la sauvegarde dans Firebase du deviceId et de son rôle
+  await Firebase.initializeApp(); // important si absent
+  await registerDevice(deviceId, isReceiver);
+  // fin ajout
   runApp(MyApp(deviceId: deviceId));
 }
 
@@ -114,4 +118,16 @@ Future<String> getDeviceId() async {
   }
 
   return deviceId;
+}
+
+
+// ajouté le 08/04/2025 pour la sauvegarde dans Firebase du deviceId et de son rôle
+Future<void> registerDevice(String deviceId, bool isReceiver) async {
+  final deviceDoc = FirebaseFirestore.instance.collection('devices').doc(deviceId);
+  await deviceDoc.set({
+    'deviceId': deviceId,
+    'isReceiver': isReceiver,
+    'lastSeen': DateTime.now().toIso8601String(),
+  });
+  print('📡 Appareil enregistré : $deviceId (receiver: $isReceiver)');
 }
