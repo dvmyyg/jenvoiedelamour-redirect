@@ -43,3 +43,31 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# === Flutter & Dart specifics ===
+.dart_tool/
+.packages
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-versions
+
+# === VS Code ===
+.vscode/
+
+# === Android ===
+android/.gradle/
+android/captures/
+
+# === iOS (au cas où tu ajoutes le support plus tard) ===
+ios/Flutter/.last_build_id
+ios/.symlinks/
+ios/Pods/
+ios/.flutter-plugins
+ios/.flutter-plugins-dependencies
+ios/.generated/
+
+# === Logs ===
+*.log
+*.hprof
