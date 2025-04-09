@@ -38,6 +38,11 @@ dependencies:
   firebase_messaging: ^14.7.0
   firebase_analytics: ^10.8.0
 
+  # ajout le 09/04/2025 pour l'affichage des notifications personnalisées en local
+  flutter_local_notifications: ^17.2.4
+  device_info_plus: ^10.0.0
+
+
   # ajout le 08/04/2025 pour la communication bidirectionnelle.
   shared_preferences: ^2.2.2
   uuid: ^4.0.0

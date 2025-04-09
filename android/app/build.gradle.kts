@@ -15,6 +15,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+
+        // ✅ Ajout du 09/04/2025 : requis par flutter_local_notifications >= 17.0.0
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -55,4 +58,7 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
+
+    // ✅ Ajout du 09/04/2025 : desugaring Java 8 requis par flutter_local_notifications
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 }
