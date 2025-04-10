@@ -97,7 +97,7 @@ class _LoveScreenState extends State<LoveScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("📱 ID: \${widget.deviceId}"),
+            Text("📱 ID: ${widget.deviceId}"),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: sendLove,
