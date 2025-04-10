@@ -1,3 +1,5 @@
+// firestore_service.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ajouté le 08/04/2025 pour la sauvegarde dans Firebase du deviceId et de son rôle

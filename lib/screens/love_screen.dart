@@ -1,9 +1,13 @@
+// love_screen.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../services/i18n_service.dart';
+
 
 // 🔁 Fonction globale pour recevoir les notifications même en arrière-plan ou app fermée
 @pragma('vm:entry-point')
@@ -16,13 +20,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class LoveScreen extends StatefulWidget {
   final String deviceId;
   final bool isReceiver;
-  const LoveScreen({super.key, required this.deviceId, required this.isReceiver});
+  final String deviceLang;
+  const LoveScreen({super.key, required this.deviceId, required this.isReceiver, required this.deviceLang});
 
   @override
   State<LoveScreen> createState() => _LoveScreenState();
 }
 
 class _LoveScreenState extends State<LoveScreen> {
+  String selectedMessageType = 'heart';
   bool showIcon = false;
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
@@ -39,11 +45,13 @@ class _LoveScreenState extends State<LoveScreen> {
         .doc(widget.deviceId)
         .snapshots()
         .listen((doc) async {
-      if (doc.exists && doc.data()?['showIcon'] == true) {
-        print("🎯 Cœur reçu → animation");
-        setState(() => showIcon = true);
+      if (doc.exists && doc.data()?['messageType'] != null) {
+        final String type = doc.data()?['messageType'];
+        print("🎯 Message reçu : $type");
 
-        await _showNotification();
+        setState(() => showIcon = true);
+        final localizedBody = getMessageBody(type, widget.deviceLang);
+        await _showNotification(localizedBody);
 
         await Future.delayed(const Duration(seconds: 2));
         setState(() => showIcon = false);
@@ -51,7 +59,7 @@ class _LoveScreenState extends State<LoveScreen> {
         await FirebaseFirestore.instance
             .collection('devices')
             .doc(widget.deviceId)
-            .update({'showIcon': false});
+            .update({'messageType': FieldValue.delete()});
       }
     });
   }
@@ -69,8 +77,11 @@ class _LoveScreenState extends State<LoveScreen> {
 
     // 🔔 App en avant-plan : on affiche la notif manuellement
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("📨 [FCM] Notification reçue (avant-plan): ${message.notification?.title}");
-      _showNotification();
+      final type = message.data['messageType'] ?? 'heart';
+      print("📨 [FCM] Notification reçue (avant-plan): type=$type");
+      final body = getMessageBody(type, widget.deviceLang);
+      _showNotification(body);
+
     });
 
     // 📬 Pour test/debug : affichage du token FCM (utilisable pour envoi ciblé)
@@ -78,15 +89,15 @@ class _LoveScreenState extends State<LoveScreen> {
     print("🪪 Token FCM : $fcmToken");
   }
 
-  Future<void> sendLove() async {
+  Future<void> sendLove(String type) async {
     final devices = await FirebaseFirestore.instance.collection('devices').get();
     for (final doc in devices.docs) {
       if (doc.id != widget.deviceId) {
-        await doc.reference.update({'showIcon': true});
+        await doc.reference.update({'messageType': type});
       }
     }
 
-    print('❤️ Cœur envoyé à tous les autres devices !');
+    print('📤 Message "$type" envoyé à tous les autres devices !');
   }
 
   @override
@@ -99,11 +110,26 @@ class _LoveScreenState extends State<LoveScreen> {
           children: [
             Text("📱 ID: ${widget.deviceId}"),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: sendLove,
-              icon: const Icon(Icons.favorite, color: Colors.red),
-              label: const Text('Envoyer un cœur'),
+            DropdownButton<String>(
+              value: selectedMessageType,
+              items: getAllMessageTypes().map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(getPreviewText(value, widget.deviceLang)),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedMessageType = newValue!;
+                });
+              },
             ),
+            ElevatedButton.icon(
+              onPressed: () => sendLove(selectedMessageType),
+              icon: const Icon(Icons.send),
+              label: const Text('Envoyer'),
+            ),
+
             const SizedBox(height: 40),
             showIcon
                 ? const Icon(Icons.star, color: Colors.amber, size: 100)
@@ -114,8 +140,8 @@ class _LoveScreenState extends State<LoveScreen> {
     );
   }
 
-  // 💡 Fonction pour afficher la notification locale
-  Future<void> _showNotification() async {
+// 💡 Fonction pour afficher la notification locale
+  Future<void> _showNotification(String body) async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'love_channel',
       'Love Notifications',
@@ -145,7 +171,7 @@ class _LoveScreenState extends State<LoveScreen> {
     await flutterLocalNotificationsPlugin.show(
       0,
       '💌 Message reçu',
-      'Quelqu’un pense à toi 💖',
+      body,
       notificationDetails,
     );
 

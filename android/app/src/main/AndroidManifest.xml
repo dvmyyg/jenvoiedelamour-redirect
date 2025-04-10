@@ -38,15 +38,6 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- ✅ Ajouté le 09/04/2025 : service FCM pour réception des notifications même app fermée -->
-        <service
-            android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
-            </intent-filter>
-        </service>
-
         <!-- ✅ Ajouté le 09/04/2025 : permet la réception après redémarrage -->
         <receiver
             android:enabled="true"
