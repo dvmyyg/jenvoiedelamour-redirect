@@ -38,10 +38,10 @@ List<String> getAllMessageTypes() {
 String getMessageBody(String type, String langCode) {
   const messages = {
     'heart': {
-      'fr': "Quelqu’un pense à toi 💖",
-      'de': "Jemand denkt an dich 💖",
-      'es': "Alguien piensa en ti 💖",
-      'en': "Someone’s thinking of you 💖",
+      'fr': "Tu es mon cœur ❤️",
+      'de': "Du bist mein Herz ❤️",
+      'es': "Eres mi corazón ❤️",
+      'en': "You are my heart ❤️",
     },
     'love_you': {
       'fr': "Je t’aime 💖",
@@ -62,10 +62,10 @@ String getMessageBody(String type, String langCode) {
       'en': "Good night 🌙",
     },
     'thinking_of_you': {
-      'fr': "Je pense à toi 🤍",
-      'de': "Ich denke an dich 🤍",
-      'es': "Estoy pensando en ti 🤍",
-      'en': "Thinking of you 🤍",
+      'fr': "Quelqu’un pense à toi 💖",
+      'de': "Jemand denkt an dich 💖",
+      'es': "Alguien piensa en ti 💖",
+      'en': "Someone’s thinking of you 💖",
     },
     'hug': {
       'fr': "Un câlin pour toi 🤗",
@@ -146,10 +146,10 @@ String getPreviewText(String type, String langCode) {
     case 'heart':
     default:
       return {
-        'fr': 'Un cœur 💖',
-        'de': 'Ein Herz 💖',
-        'es': 'Un corazón 💖',
-        'en': 'A heart 💖',
-      }[langCode] ?? 'A heart 💖';
+        'fr': 'Mon cœur 💖',
+        'de': 'Mein Herz 💖',
+        'es': 'Mi corazón 💖',
+        'en': 'My heart 💖',
+      }[langCode] ?? 'My heart 💖';
   }
 }
