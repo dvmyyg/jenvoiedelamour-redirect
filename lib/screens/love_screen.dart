@@ -97,45 +97,76 @@ class _LoveScreenState extends State<LoveScreen> {
       }
     }
 
-    print('📤 Message "$type" envoyé à tous les autres devices !');
+    print('📤 Message "$type" envoyé à un autre device !');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("J'envoie de l'amour")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("📱 ID: ${widget.deviceId}"),
-            const SizedBox(height: 20),
-            DropdownButton<String>(
-              value: selectedMessageType,
-              items: getAllMessageTypes().map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(getPreviewText(value, widget.deviceLang)),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedMessageType = newValue!;
-                });
-              },
-            ),
-            ElevatedButton.icon(
-              onPressed: () => sendLove(selectedMessageType),
-              icon: const Icon(Icons.send),
-              label: const Text('Envoyer'),
-            ),
-
-            const SizedBox(height: 40),
-            showIcon
-                ? const Icon(Icons.star, color: Colors.amber, size: 100)
-                : const Text("🛌 En attente de l'amour..."),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.favorite, color: Colors.red),
+            SizedBox(width: 8),
+            Text("J'envoie de l'amour"),
           ],
         ),
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  DropdownButton<String>(
+                    value: selectedMessageType,
+                    dropdownColor: Colors.black,
+                    iconEnabledColor: Colors.white,
+                    style: const TextStyle(color: Colors.white),
+                    items: getAllMessageTypes().map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(
+                          getPreviewText(value, widget.deviceLang),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedMessageType = newValue!;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => sendLove(selectedMessageType),
+                    icon: const Icon(Icons.send),
+                    label: Text(getUILabel('send', widget.deviceLang)),
+                  ),
+                  const SizedBox(height: 60),
+                  if (showIcon)
+                    const Icon(Icons.star, color: Colors.amber, size: 100),
+                  const SizedBox(height: 60),
+                  Text(
+                    "📱 ID: ${widget.deviceId}",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -170,7 +201,7 @@ class _LoveScreenState extends State<LoveScreen> {
 
     await flutterLocalNotificationsPlugin.show(
       0,
-      '💌 Message reçu',
+      getUILabel('message_received_title', widget.deviceLang),
       body,
       notificationDetails,
     );

@@ -1,5 +1,25 @@
 // services/i18n_service.dart
 
+/// Langage interface
+String getUILabel(String key, String langCode) {
+  const labels = {
+    'send': {
+      'fr': 'Envoyer',
+      'de': 'Schicken',
+      'es': 'Enviar',
+      'en': 'Send',
+    },
+    'message_received_title': {
+      'fr': '💌 Message reçu',
+      'de': '💌 Nachricht empfangen',
+      'es': '💌 Mensaje recibido',
+      'en': '💌 Message received',
+    },
+  };
+
+  return labels[key]?[langCode] ?? labels[key]?['en'] ?? key;
+}
+
 /// Liste des messages possibles
 List<String> getAllMessageTypes() {
   return [
