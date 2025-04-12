@@ -1,5 +1,5 @@
-name: jelamvp01
-description: "communication Android 1 vers Android 2 par Firebase"
+name: jelamvp01 # nom technique
+description: "L'app qui envoie de l'amour ❤️" # descriptif commercial
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

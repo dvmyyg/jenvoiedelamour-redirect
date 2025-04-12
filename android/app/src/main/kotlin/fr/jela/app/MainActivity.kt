@@ -1,4 +1,4 @@
-package com.example.jelamvp01
+package fr.jela.app
 
 import io.flutter.embedding.android.FlutterActivity
 

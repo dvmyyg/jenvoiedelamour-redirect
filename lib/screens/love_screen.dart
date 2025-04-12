@@ -1,5 +1,6 @@
 // 📄 lib/screens/love_screen.dart
 
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,8 +10,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import '../services/i18n_service.dart';
 import '../screens/settings_screen.dart';
 
-
-// 🔁 Fonction globale pour recevoir les notifications même en arrière-plan ou app fermée
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("🔔 [FCM-BG] Notification reçue en arrière-plan : ${message.notification?.title}");
@@ -30,12 +29,21 @@ class _LoveScreenState extends State<LoveScreen> {
   String selectedMessageType = 'heart';
   bool showIcon = false;
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  Timer? pingTimer;
+  String? senderName;
 
   @override
   void initState() {
     super.initState();
+    _updateForegroundStatus(true);
+    _loadDisplayName();
+
     _initNotifications();
     _configureFCM();
+
+    pingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      _updateForegroundStatus(true);
+    });
 
     FirebaseFirestore.instance
         .collection('devices')
@@ -44,11 +52,13 @@ class _LoveScreenState extends State<LoveScreen> {
         .listen((doc) async {
       if (doc.exists && doc.data()?['messageType'] != null) {
         final String type = doc.data()?['messageType'];
-        print("🎯 Message reçu : $type");
+      final String? receivedSenderName = doc.data()?['senderName'];
+
+      print("🎯 Message reçu : $type");
 
         setState(() => showIcon = true);
         final localizedBody = getMessageBody(type, widget.deviceLang);
-        await _showNotification(localizedBody);
+        await _showNotification(localizedBody, receivedSenderName);
 
         await Future.delayed(const Duration(seconds: 2));
         setState(() => showIcon = false);
@@ -61,6 +71,29 @@ class _LoveScreenState extends State<LoveScreen> {
     });
   }
 
+  Future<void> _loadDisplayName() async {
+    final doc = await FirebaseFirestore.instance.collection('devices').doc(widget.deviceId).get();
+    senderName = doc.data()?['displayName'] ?? null;
+  }
+
+  @override
+  void dispose() {
+    _updateForegroundStatus(false);
+    pingTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _updateForegroundStatus(bool isForeground) async {
+    await FirebaseFirestore.instance
+        .collection('devices')
+        .doc(widget.deviceId)
+        .update({
+      'isForeground': isForeground,
+      'lastPing': DateTime.now(),
+    });
+    print("📱 isForeground=$isForeground mis à jour pour ${widget.deviceId}");
+  }
+
   Future<void> _initNotifications() async {
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -69,13 +102,21 @@ class _LoveScreenState extends State<LoveScreen> {
   }
 
   Future<void> _configureFCM() async {
+    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      alert: false,
+      badge: false,
+      sound: false,
+    );
+
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       final type = message.data['messageType'] ?? 'heart';
       print("📨 [FCM] Notification reçue (avant-plan): type=$type");
-      final body = getMessageBody(type, widget.deviceLang);
-      _showNotification(body);
+
+      setState(() => showIcon = true);
+      await Future.delayed(const Duration(seconds: 2));
+      setState(() => showIcon = false);
     });
 
     final fcmToken = await FirebaseMessaging.instance.getToken();
@@ -116,13 +157,13 @@ class _LoveScreenState extends State<LoveScreen> {
     }
 
     final otherDeviceRef = FirebaseFirestore.instance.collection('devices').doc(otherDeviceId);
-    await otherDeviceRef.update({'messageType': type});
+    await otherDeviceRef.update({
+      'messageType': type,
+      'senderName': senderName ?? 'Quelqu’un',
+    });
 
     print('📤 Message "$type" envoyé à $otherDeviceId via appairage 🔗');
   }
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +233,6 @@ class _LoveScreenState extends State<LoveScreen> {
                   ),
                 ),
               ),
-              // ⚙️ Bouton en bas à gauche
               Positioned(
                 bottom: 16,
                 left: 16,
@@ -204,7 +244,7 @@ class _LoveScreenState extends State<LoveScreen> {
                       MaterialPageRoute(
                         builder: (_) => SettingsScreen(
                           currentLang: widget.deviceLang,
-                          deviceId: widget.deviceId, // ✅ Bien à l'intérieur du constructeur
+                          deviceId: widget.deviceId,
                         ),
                       ),
                     );
@@ -218,8 +258,11 @@ class _LoveScreenState extends State<LoveScreen> {
     );
   }
 
-  // 💡 Notification locale
-  Future<void> _showNotification(String body) async {
+  Future<void> _showNotification(String body, String? receivedSenderName) async {
+     final title = receivedSenderName != null
+         ? "💌 ${receivedSenderName} t’a envoyé un message"
+         : getUILabel('message_received_title', widget.deviceLang);
+
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'love_channel',
       'Love Notifications',
@@ -233,7 +276,7 @@ class _LoveScreenState extends State<LoveScreen> {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(channel);
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'love_channel',
       'Love Notifications',
       channelDescription: 'Affiche un cœur en surimpression 💖',
@@ -243,12 +286,12 @@ class _LoveScreenState extends State<LoveScreen> {
       enableVibration: true,
     );
 
-    const notificationDetails = NotificationDetails(android: androidDetails);
+    final notificationDetails = NotificationDetails(android: androidDetails);
 
     await flutterLocalNotificationsPlugin.show(
       0,
-      getUILabel('message_received_title', widget.deviceLang),
-      body,
+      title,
+      '', // on laisse body vide pour ne pas afficher le corps du message dans la notification
       notificationDetails,
     );
 

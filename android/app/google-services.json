@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1087981035524:android:7df2daf598f2c732fc5551",
+        "mobilesdk_app_id": "1:1087981035524:android:1d58ca2ac6ef5c52fc5551",
         "android_client_info": {
-          "package_name": "com.example.jelamvp01"
+          "package_name": "fr.jela.app"
         }
       },
       "oauth_client": [],
