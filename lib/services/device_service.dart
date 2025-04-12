@@ -1,4 +1,4 @@
-// device_service.dart
+// lib/services/device_service.dart
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';

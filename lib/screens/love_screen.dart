@@ -41,7 +41,7 @@ class _LoveScreenState extends State<LoveScreen> {
     _initNotifications();
     _configureFCM();
 
-    pingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+    pingTimer = Timer.periodic(const Duration(minutes: 15), (_) {
       _updateForegroundStatus(true);
     });
 

@@ -1,4 +1,4 @@
-// services/i18n_service.dart
+// lib/services//i18n_service.dart
 
 /// Langage interface
 String getUILabel(String key, String langCode) {
