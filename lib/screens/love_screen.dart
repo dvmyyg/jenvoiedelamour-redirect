@@ -9,6 +9,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../services/i18n_service.dart';
 import '../screens/settings_screen.dart';
+import 'recipients_screen.dart'; // lib/screens/recipients_screen.dart
+
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -180,7 +182,22 @@ class _LoveScreenState extends State<LoveScreen> {
             Text("J'envoie de l'amour"),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.group),
+            tooltip: "Gérer les destinataires",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RecipientsScreen(deviceId: widget.deviceId),
+                ),
+              );
+            },
+          ),
+        ],
       ),
+
       body: LayoutBuilder(
         builder: (context, constraints) {
           return Stack(
