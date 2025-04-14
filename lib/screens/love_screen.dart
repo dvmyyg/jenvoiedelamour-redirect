@@ -1,16 +1,15 @@
 // 📄 lib/screens/love_screen.dart
 
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../services/i18n_service.dart';
 import '../screens/settings_screen.dart';
-import 'recipients_screen.dart'; // lib/screens/recipients_screen.dart
-
+import '../screens/recipients_screen.dart';
+import '../models/recipient.dart';
+import '../services/recipient_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -33,13 +32,15 @@ class _LoveScreenState extends State<LoveScreen> {
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
   Timer? pingTimer;
   String? senderName;
+  List<Recipient> recipients = [];
+  Recipient? selectedRecipient;
 
   @override
   void initState() {
     super.initState();
     _updateForegroundStatus(true);
     _loadDisplayName();
-
+    _loadRecipients();
     _initNotifications();
     _configureFCM();
 
@@ -54,9 +55,9 @@ class _LoveScreenState extends State<LoveScreen> {
         .listen((doc) async {
       if (doc.exists && doc.data()?['messageType'] != null) {
         final String type = doc.data()?['messageType'];
-      final String? receivedSenderName = doc.data()?['senderName'];
+        final String? receivedSenderName = doc.data()?['senderName'];
 
-      print("🎯 Message reçu : $type");
+        print("🌟 Message reçu : $type");
 
         setState(() => showIcon = true);
         final localizedBody = getMessageBody(type, widget.deviceLang);
@@ -76,6 +77,17 @@ class _LoveScreenState extends State<LoveScreen> {
   Future<void> _loadDisplayName() async {
     final doc = await FirebaseFirestore.instance.collection('devices').doc(widget.deviceId).get();
     senderName = doc.data()?['displayName'] ?? null;
+  }
+
+  Future<void> _loadRecipients() async {
+    final service = RecipientService(widget.deviceId);
+    final list = await service.fetchRecipients();
+    setState(() {
+      recipients = list;
+      if (recipients.isNotEmpty) {
+        selectedRecipient = recipients[0];
+      }
+    });
   }
 
   @override
@@ -122,41 +134,16 @@ class _LoveScreenState extends State<LoveScreen> {
     });
 
     final fcmToken = await FirebaseMessaging.instance.getToken();
-    print("🪪 Token FCM : $fcmToken");
+    print("🧪 Token FCM : $fcmToken");
   }
 
   Future<void> sendLove(String type) async {
-    final deviceRef = FirebaseFirestore.instance.collection('devices').doc(widget.deviceId);
-    final deviceDoc = await deviceRef.get();
-
-    final pairingCode = deviceDoc.data()?['pairingCode'];
-    if (pairingCode == null) {
-      print("⚠️ Aucun code d’appairage trouvé pour ce device !");
+    if (selectedRecipient == null || !selectedRecipient!.paired || selectedRecipient!.deviceId == null) {
+      print("❌ Aucun destinataire sélectionné ou non appairé");
       return;
     }
 
-    final pairingRef = FirebaseFirestore.instance.collection('pairings').doc(pairingCode);
-    final pairingDoc = await pairingRef.get();
-
-    final data = pairingDoc.data();
-    if (data == null) {
-      print("⚠️ Code d’appairage non valide !");
-      return;
-    }
-
-    final isDeviceA = data['deviceA'] == widget.deviceId;
-    final isDeviceB = data['deviceB'] == widget.deviceId;
-
-    if (!isDeviceA && !isDeviceB) {
-      print("❌ Ce téléphone ne fait pas partie de l’appairage !");
-      return;
-    }
-
-    final otherDeviceId = isDeviceA ? data['deviceB'] : data['deviceA'];
-    if (otherDeviceId == null) {
-      print("⏳ Appairage encore incomplet...");
-      return;
-    }
+    final otherDeviceId = selectedRecipient!.deviceId!;
 
     final otherDeviceRef = FirebaseFirestore.instance.collection('devices').doc(otherDeviceId);
     await otherDeviceRef.update({
@@ -186,89 +173,131 @@ class _LoveScreenState extends State<LoveScreen> {
           IconButton(
             icon: const Icon(Icons.group),
             tooltip: "Gérer les destinataires",
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => RecipientsScreen(deviceId: widget.deviceId),
+                  builder: (_) => RecipientsScreen(
+                    deviceId: widget.deviceId,
+                    deviceLang: widget.deviceLang,
+                  ),
                 ),
               );
+              _loadRecipients();
             },
           ),
         ],
       ),
-
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Stack(
-            children: [
-              Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      DropdownButton<String>(
-                        value: selectedMessageType,
-                        dropdownColor: Colors.black,
-                        iconEnabledColor: Colors.white,
-                        style: const TextStyle(color: Colors.white),
-                        items: getAllMessageTypes().map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(
-                              getPreviewText(value, widget.deviceLang),
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedMessageType = newValue!;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        onPressed: () => sendLove(selectedMessageType),
-                        icon: const Icon(Icons.send),
-                        label: Text(getUILabel('send', widget.deviceLang)),
-                      ),
-                      const SizedBox(height: 60),
-                      if (showIcon)
-                        const Icon(Icons.star, color: Colors.amber, size: 100),
-                      const SizedBox(height: 60),
-                      Text(
-                        "📱 ID: ${widget.deviceId}",
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
+      body: Column(
+        children: [
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: recipients.length + 1,
+              itemBuilder: (context, index) {
+                if (index == recipients.length) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RecipientsScreen(
+                            deviceId: widget.deviceId,
+                            deviceLang: widget.deviceLang,
+                          ),
                         ),
+                      );
+                    },
+                    child: Container(
+                      width: 100,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey, style: BorderStyle.solid),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 16,
-                left: 16,
-                child: IconButton(
-                  icon: const Icon(Icons.settings, color: Colors.white),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SettingsScreen(
-                          currentLang: widget.deviceLang,
-                          deviceId: widget.deviceId,
-                        ),
+                      child: const Center(
+                        child: Icon(Icons.add, color: Colors.white),
                       ),
-                    );
-                  },
+                    ),
+                  );
+                } else {
+                  final r = recipients[index];
+                  final isSelected = r.id == selectedRecipient?.id;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedRecipient = r;
+                      });
+                    },
+                    child: Container(
+                      width: 140,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.pink : Colors.grey[800],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(r.icon, style: const TextStyle(fontSize: 24)),
+                          const SizedBox(height: 6),
+                          Text(r.displayName, style: const TextStyle(color: Colors.white)),
+                          Text(r.relation, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+          DropdownButton<String>(
+            value: selectedMessageType,
+            dropdownColor: Colors.black,
+            iconEnabledColor: Colors.white,
+            style: const TextStyle(color: Colors.white),
+            items: getAllMessageTypes().map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(
+                  getPreviewText(value, widget.deviceLang),
+                  style: const TextStyle(color: Colors.white),
                 ),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                selectedMessageType = newValue!;
+              });
+            },
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: selectedRecipient != null && selectedRecipient!.paired ? () => sendLove(selectedMessageType) : null,
+            icon: const Icon(Icons.send),
+            label: Text(getUILabel('send', widget.deviceLang)),
+          ),
+          const SizedBox(height: 40),
+          if (showIcon) const Icon(Icons.star, color: Colors.amber, size: 100),
+          const SizedBox(height: 20),
+          Text("📱 ID: ${widget.deviceId}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        ],
+      ),
+      floatingActionButton: IconButton(
+        icon: const Icon(Icons.settings, color: Colors.white),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SettingsScreen(
+                currentLang: widget.deviceLang,
+                deviceId: widget.deviceId,
               ),
-            ],
+            ),
           );
         },
       ),
@@ -276,9 +305,9 @@ class _LoveScreenState extends State<LoveScreen> {
   }
 
   Future<void> _showNotification(String body, String? receivedSenderName) async {
-     final title = receivedSenderName != null
-         ? "💌 ${receivedSenderName} t’a envoyé un message"
-         : getUILabel('message_received_title', widget.deviceLang);
+    final title = receivedSenderName != null
+        ? "💌 ${receivedSenderName} t’a envoyé un message"
+        : getUILabel('message_received_title', widget.deviceLang);
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'love_channel',
@@ -289,8 +318,7 @@ class _LoveScreenState extends State<LoveScreen> {
       enableVibration: true,
     );
 
-    final androidPlugin = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(channel);
 
     final androidDetails = AndroidNotificationDetails(
@@ -308,7 +336,7 @@ class _LoveScreenState extends State<LoveScreen> {
     await flutterLocalNotificationsPlugin.show(
       0,
       title,
-      '', // on laisse body vide pour ne pas afficher le corps du message dans la notification
+      '',
       notificationDetails,
     );
 

@@ -8,7 +8,13 @@ import 'add_recipient_screen.dart';
 
 class RecipientsScreen extends StatefulWidget {
   final String deviceId;
-  const RecipientsScreen({super.key, required this.deviceId});
+  final String deviceLang;
+
+  const RecipientsScreen({
+    super.key,
+    required this.deviceId,
+    required this.deviceLang,
+  });
 
   @override
   State<RecipientsScreen> createState() => _RecipientsScreenState();
@@ -54,7 +60,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
               style: TextStyle(color: Colors.grey[400]),
             ),
             trailing: Text(
-              r.paired ? "[Appairé]" : "[Non appairé]",
+              r.paired ? "[Appaire]" : "[Non appaire]",
               style: TextStyle(color: r.paired ? Colors.green : Colors.orange),
             ),
             onTap: () {
@@ -63,6 +69,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                 MaterialPageRoute(
                   builder: (_) => RecipientDetailsScreen(
                     deviceId: widget.deviceId,
+                    deviceLang: widget.deviceLang, // ✅ Ajout ici
                     recipient: r,
                   ),
                 ),
@@ -87,4 +94,3 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
     );
   }
 }
-

@@ -6,11 +6,13 @@ import '../models/recipient.dart';
 
 class EditRecipientScreen extends StatefulWidget {
   final String deviceId;
+  final String deviceLang; // ✅ Ajouté
   final Recipient recipient;
 
   const EditRecipientScreen({
     super.key,
     required this.deviceId,
+    required this.deviceLang, // ✅ Ajouté
     required this.recipient,
   });
 

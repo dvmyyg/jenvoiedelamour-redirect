@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
 class AddRecipientScreen extends StatefulWidget {
   final String deviceId;
@@ -17,39 +18,42 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
   final _displayNameController = TextEditingController();
   final _relationController = TextEditingController();
   final _iconController = TextEditingController();
-  List<String> _selectedPacks = [];
   bool _paired = false;
+  List<String> _selectedPacks = [];
 
   final List<String> availablePacks = ['romantic', 'tender', 'funny'];
 
-  @override
-  void dispose() {
-    _displayNameController.dispose();
-    _relationController.dispose();
-    _iconController.dispose();
-    super.dispose();
+  String capitalize(String input) {
+    if (input.isEmpty) return input;
+    return input[0].toUpperCase() + input.substring(1).toLowerCase();
   }
 
   Future<void> _saveRecipient() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final newDoc = FirebaseFirestore.instance
+    final displayName = capitalize(_displayNameController.text.trim());
+    final relation = capitalize(_relationController.text.trim());
+    final icon = _iconController.text.trim();
+
+    final id = const Uuid().v4();
+
+    final docRef = FirebaseFirestore.instance
         .collection('devices')
         .doc(widget.deviceId)
         .collection('recipients')
-        .doc();
+        .doc(id);
 
-    await newDoc.set({
-      'id': newDoc.id,
-      'displayName': _displayNameController.text,
-      'deviceId': '',
-      'relation': _relationController.text,
-      'icon': _iconController.text,
+    await docRef.set({
+      'id': id,
+      'displayName': displayName,
+      'relation': relation,
+      'icon': icon,
       'paired': _paired,
       'allowedPacks': _selectedPacks,
+      'deviceId': null, // sera rempli lors de l’appairage
     });
 
-    Navigator.pop(context);
+    Navigator.pop(context, true); // retour avec succès
   }
 
   @override
@@ -57,7 +61,7 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("➕ Ajouter un destinataire"),
+        title: const Text("➕ Nouveau destinataire"),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
@@ -69,7 +73,7 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
             children: [
               _buildTextField("Nom affiché", _displayNameController),
               _buildTextField("Relation", _relationController),
-              _buildTextField("Icône (ex: ❤️)", _iconController),
+              _buildTextField("Icône (ex: 💖)", _iconController),
               const SizedBox(height: 16),
               SwitchListTile(
                 value: _paired,
@@ -102,12 +106,12 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
               ElevatedButton.icon(
                 onPressed: _saveRecipient,
                 icon: const Icon(Icons.check),
-                label: const Text("Ajouter"),
+                label: const Text("Créer"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink,
                   foregroundColor: Colors.white,
                 ),
-              )
+              ),
             ],
           ),
         ),
