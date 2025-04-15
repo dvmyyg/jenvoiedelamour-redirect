@@ -71,10 +71,11 @@
     if (!recipient) {
       messageEl.innerHTML = `<span class='error'>${tLang.missing}</span>`;
     } else {
-      // Tentative d'ouverture via l'app
-      window.location.href = `intent://jela.app/open?recipient=${recipient}#Intent;scheme=https;package=com.jela.app;end`;
+      // Tentative d'ouverture via l'app avec fallback immédiat intégré
+      const fallbackUrl = encodeURIComponent("https://dvmyyg.github.io/jenvoiedelamour-redirect/apk/app-release.apk");
+      window.location.href = `intent://jela.app/open?recipient=${recipient}#Intent;scheme=https;package=com.jela.app;S.browser_fallback_url=${fallbackUrl};end`;
 
-      // Après 2 secondes, si rien ne se passe → proposer l’APK
+      // En bonus : affichage manuel du lien au cas où tout échoue (optionnel mais utile)
       setTimeout(() => {
         messageEl.innerHTML = `
           <p>${tLang.not_installed}</p>
@@ -85,4 +86,3 @@
   </script>
 </body>
 </html>
-
