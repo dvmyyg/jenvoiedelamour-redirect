@@ -29,26 +29,60 @@
 </head>
 <body>
   <h1>💌 J'envoie de l'amour</h1>
-  <p id="message">Connexion en cours avec l'application...</p>
+  <p id="message"></p>
 
   <script>
+    const t = {
+      fr: {
+        connecting: "Connexion en cours avec l'application...",
+        missing: "❌ Lien invalide : paramètre 'recipient' manquant.",
+        not_installed: "L'application n'est pas installée.",
+        download: "Télécharger l'application"
+      },
+      en: {
+        connecting: "Connecting with the app...",
+        missing: "❌ Invalid link: 'recipient' parameter missing.",
+        not_installed: "The app is not installed.",
+        download: "Download the app"
+      },
+      de: {
+        connecting: "Verbindung mit der App wird hergestellt...",
+        missing: "❌ Ungültiger Link: 'recipient'-Parameter fehlt.",
+        not_installed: "Die App ist nicht installiert.",
+        download: "App herunterladen"
+      },
+      es: {
+        connecting: "Conectando con la app...",
+        missing: "❌ Enlace inválido: falta el parámetro 'recipient'.",
+        not_installed: "La aplicación no está instalada.",
+        download: "Descargar la aplicación"
+      },
+    };
+
+    const lang = navigator.language.slice(0, 2);
+    const tLang = t[lang] || t.en;
+
     const urlParams = new URLSearchParams(window.location.search);
     const recipient = urlParams.get("recipient");
 
+    const messageEl = document.getElementById("message");
+    messageEl.innerText = tLang.connecting;
+
     if (!recipient) {
-      document.getElementById("message").innerHTML = "<span class='error'>❌ Lien invalide : paramètre 'recipient' manquant.</span>";
+      messageEl.innerHTML = `<span class='error'>${tLang.missing}</span>`;
     } else {
       // Tentative d'ouverture via l'app
       window.location.href = `intent://jela.app/open?recipient=${recipient}#Intent;scheme=https;package=com.jela.app;end`;
 
-      // Après 2 secondes sans ouverture, proposer le téléchargement de l'APK
+      // Après 2 secondes, si rien ne se passe → proposer l’APK
       setTimeout(() => {
-        document.getElementById("message").innerHTML = `
-          <p>L'application n'est pas installée.</p>
-          <p><a class='apk-link' href='https://example.com/jela.apk' download>Télécharger l'application</a></p>
+        messageEl.innerHTML = `
+          <p>${tLang.not_installed}</p>
+          <p><a class='apk-link' href='https://dvmyyg.github.io/jenvoiedelamour-redirect/apk/app-release.apk' download>${tLang.download}</a></p>
         `;
       }, 2000);
     }
   </script>
 </body>
 </html>
+
