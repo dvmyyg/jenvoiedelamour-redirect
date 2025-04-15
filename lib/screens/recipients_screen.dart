@@ -83,7 +83,11 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => AddRecipientScreen(deviceId: widget.deviceId),
+              builder: (_) => AddRecipientScreen(
+                deviceId: widget.deviceId,
+                deviceLang: widget.deviceLang,
+              ),
+
             ),
           );
           _loadRecipients(); // recharge la liste après retour

@@ -38,6 +38,12 @@ dependencies:
   firebase_messaging: ^14.7.0
   firebase_analytics: ^10.8.0
 
+  # ajout le 14/09/2025 pour partager un lien d'inscription
+  firebase_dynamic_links: ^5.4.8
+
+  # ajout le 14/09/2025 pour partager un lien d'inscription
+  share_plus: ^7.2.1  # ou la dernière version disponible
+
   # ajout le 09/04/2025 pour l'affichage des notifications personnalisées en local
   flutter_local_notifications: ^17.2.4
   device_info_plus: ^10.0.0

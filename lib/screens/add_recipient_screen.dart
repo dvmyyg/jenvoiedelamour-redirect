@@ -3,11 +3,15 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
+import '../services/i18n_service.dart';
 
 class AddRecipientScreen extends StatefulWidget {
   final String deviceId;
+  final String deviceLang;
 
-  const AddRecipientScreen({super.key, required this.deviceId});
+  const AddRecipientScreen({super.key, required this.deviceId, required this.deviceLang});
 
   @override
   State<AddRecipientScreen> createState() => _AddRecipientScreenState();
@@ -16,12 +20,18 @@ class AddRecipientScreen extends StatefulWidget {
 class _AddRecipientScreenState extends State<AddRecipientScreen> {
   final _formKey = GlobalKey<FormState>();
   final _displayNameController = TextEditingController();
-  final _relationController = TextEditingController();
   final _iconController = TextEditingController();
-  bool _paired = false;
-  List<String> _selectedPacks = [];
 
-  final List<String> availablePacks = ['romantic', 'tender', 'funny'];
+  final List<String> relationKeys = [
+    'compagne', 'compagnon', 'enfant', 'maman', 'papa', 'ami', 'autre'
+  ];
+  late String _selectedRelationKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRelationKey = relationKeys.first;
+  }
 
   String capitalize(String input) {
     if (input.isEmpty) return input;
@@ -32,8 +42,8 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final displayName = capitalize(_displayNameController.text.trim());
-    final relation = capitalize(_relationController.text.trim());
     final icon = _iconController.text.trim();
+    final relation = _selectedRelationKey;
 
     final id = const Uuid().v4();
 
@@ -48,12 +58,19 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
       'displayName': displayName,
       'relation': relation,
       'icon': icon,
-      'paired': _paired,
-      'allowedPacks': _selectedPacks,
-      'deviceId': null, // sera rempli lors de l’appairage
+      'deviceId': null,
     });
 
-    Navigator.pop(context, true); // retour avec succès
+    _sharePairingLink(id);
+    Navigator.pop(context, true);
+  }
+
+  void _sharePairingLink(String recipientId) {
+    final link = 'https://jela.page.link/?recipient=$recipientId';
+    Share.share(
+      '💌 Clique ici pour t’appairer avec moi dans l’app J’envoie de l’amour :\n$link',
+      subject: 'Lien d’appairage',
+    );
   }
 
   @override
@@ -72,41 +89,13 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
           child: ListView(
             children: [
               _buildTextField("Nom affiché", _displayNameController),
-              _buildTextField("Relation", _relationController),
+              _buildRelationDropdown(),
               _buildTextField("Icône (ex: 💖)", _iconController),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                value: _paired,
-                onChanged: (val) => setState(() => _paired = val),
-                title: const Text("Appairé", style: TextStyle(color: Colors.white)),
-              ),
-              const SizedBox(height: 16),
-              const Text("Packs autorisés :", style: TextStyle(color: Colors.white)),
-              Wrap(
-                spacing: 8,
-                children: availablePacks.map((pack) {
-                  final selected = _selectedPacks.contains(pack);
-                  return FilterChip(
-                    label: Text(pack),
-                    selected: selected,
-                    selectedColor: Colors.pink,
-                    onSelected: (val) {
-                      setState(() {
-                        if (val) {
-                          _selectedPacks.add(pack);
-                        } else {
-                          _selectedPacks.remove(pack);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: _saveRecipient,
-                icon: const Icon(Icons.check),
-                label: const Text("Créer"),
+                icon: const Icon(Icons.link),
+                label: const Text("Partager le lien d’appairage"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink,
                   foregroundColor: Colors.white,
@@ -136,6 +125,34 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
           ),
         ),
         validator: (value) => value == null || value.isEmpty ? 'Champ requis' : null,
+      ),
+    );
+  }
+
+  Widget _buildRelationDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: _selectedRelationKey,
+        items: relationKeys.map((key) {
+          return DropdownMenuItem(
+            value: key,
+            child: Text(getUILabel(key, widget.deviceLang)),
+          );
+        }).toList(),
+        onChanged: (val) => setState(() => _selectedRelationKey = val ?? relationKeys.first),
+        dropdownColor: Colors.black,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          labelText: "Relation",
+          labelStyle: TextStyle(color: Colors.white),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.pink),
+          ),
+        ),
       ),
     );
   }

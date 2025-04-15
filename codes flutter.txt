@@ -1,0 +1,6 @@
+Xiaomi arrondi Mi 10 lite
+flutter run -d 72890b83 --verbose
+
+Xiaomi red mi 9
+flutter run -d 72890b83 --verbose
+

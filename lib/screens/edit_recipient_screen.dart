@@ -2,17 +2,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/recipient.dart';
+import '../services/i18n_service.dart';
 
 class EditRecipientScreen extends StatefulWidget {
   final String deviceId;
-  final String deviceLang; // ✅ Ajouté
+  final String deviceLang;
   final Recipient recipient;
 
   const EditRecipientScreen({
     super.key,
     required this.deviceId,
-    required this.deviceLang, // ✅ Ajouté
+    required this.deviceLang,
     required this.recipient,
   });
 
@@ -23,21 +25,19 @@ class EditRecipientScreen extends StatefulWidget {
 class _EditRecipientScreenState extends State<EditRecipientScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _displayNameController;
-  late TextEditingController _relationController;
   late TextEditingController _iconController;
-  late bool _paired;
-  late List<String> _selectedPacks;
+  late String _selectedRelationKey;
 
-  final List<String> availablePacks = ['romantic', 'tender', 'funny'];
+  final List<String> relationKeys = [
+    'compagne', 'compagnon', 'enfant', 'maman', 'papa', 'ami', 'autre'
+  ];
 
   @override
   void initState() {
     super.initState();
     _displayNameController = TextEditingController(text: widget.recipient.displayName);
-    _relationController = TextEditingController(text: widget.recipient.relation);
     _iconController = TextEditingController(text: widget.recipient.icon);
-    _paired = widget.recipient.paired;
-    _selectedPacks = List<String>.from(widget.recipient.allowedPacks);
+    _selectedRelationKey = widget.recipient.relation; // ex: "maman"
   }
 
   Future<void> _saveChanges() async {
@@ -50,14 +50,20 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
         .doc(widget.recipient.id);
 
     await docRef.update({
-      'displayName': _displayNameController.text,
-      'relation': _relationController.text,
-      'icon': _iconController.text,
-      'paired': _paired,
-      'allowedPacks': _selectedPacks,
+      'displayName': _displayNameController.text.trim(),
+      'relation': _selectedRelationKey, // stocke la clé uniquement
+      'icon': _iconController.text.trim(),
     });
 
-    Navigator.pop(context, true); // retour avec signal de mise à jour
+    Navigator.pop(context, true);
+  }
+
+  void _sharePairingLink() {
+    final link = 'https://jela.page.link/?recipient=${widget.recipient.id}';
+    Share.share(
+      '💌 Clique ici pour t’appairer avec moi dans l’app J’envoie de l’amour :\n$link',
+      subject: 'Lien d’appairage',
+    );
   }
 
   @override
@@ -76,44 +82,26 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
           child: ListView(
             children: [
               _buildTextField("Nom affiché", _displayNameController),
-              _buildTextField("Relation", _relationController),
+              _buildRelationDropdown(),
               _buildTextField("Icône (ex: 💖)", _iconController),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                value: _paired,
-                onChanged: (val) => setState(() => _paired = val),
-                title: const Text("Appairé", style: TextStyle(color: Colors.white)),
-              ),
-              const SizedBox(height: 16),
-              const Text("Packs autorisés :", style: TextStyle(color: Colors.white)),
-              Wrap(
-                spacing: 8,
-                children: availablePacks.map((pack) {
-                  final selected = _selectedPacks.contains(pack);
-                  return FilterChip(
-                    label: Text(pack),
-                    selected: selected,
-                    selectedColor: Colors.pink,
-                    onSelected: (val) {
-                      setState(() {
-                        if (val) {
-                          _selectedPacks.add(pack);
-                        } else {
-                          _selectedPacks.remove(pack);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: _saveChanges,
                 icon: const Icon(Icons.check),
-                label: const Text("Enregistrer"),
+                label: const Text("Enregistrer les modifications"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink,
                   foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _sharePairingLink,
+                icon: const Icon(Icons.link),
+                label: const Text("Partager le lien d’appairage"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[850],
+                  foregroundColor: Colors.white70,
                 ),
               ),
             ],
@@ -140,6 +128,38 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
           ),
         ),
         validator: (value) => value == null || value.isEmpty ? 'Champ requis' : null,
+      ),
+    );
+  }
+
+  Widget _buildRelationDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: _selectedRelationKey,
+        items: relationKeys.map((key) {
+          return DropdownMenuItem(
+            value: key,
+            child: Text(getUILabel(key, widget.deviceLang)),
+          );
+        }).toList(),
+        onChanged: (val) {
+          if (val != null) {
+            setState(() => _selectedRelationKey = val);
+          }
+        },
+        dropdownColor: Colors.black,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          labelText: "Relation",
+          labelStyle: TextStyle(color: Colors.white),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.pink),
+          ),
+        ),
       ),
     );
   }
