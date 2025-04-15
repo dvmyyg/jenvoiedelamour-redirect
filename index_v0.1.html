@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appairage Jela</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 2rem;
+    }
+    .logo {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    .loading {
+      margin-top: 2rem;
+      font-size: 1.2rem;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const recipientId = params.get("recipient");
+
+      if (!recipientId) {
+        document.body.innerHTML = "<h2>❌ Lien invalide : paramètre 'recipient' manquant.</h2>";
+        return;
+      }
+
+      const fallback = "https://play.google.com/store/apps/details?id=com.jela.app"; // à adapter
+      const androidIntent = `intent://jela.app/redirect?recipient=${recipientId}#Intent;scheme=https;package=com.jela.app;end`;
+
+      window.location.href = androidIntent;
+
+      // Fallback si rien ne se passe (non Android)
+      setTimeout(() => {
+        window.location.href = fallback;
+      }, 1500);
+    });
+  </script>
+</head>
+<body>
+  <div class="logo">💌 J'envoie de l'amour</div>
+  <div class="loading">Connexion en cours avec l'application...</div>
+</body>
+</html>

@@ -1,50 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Appairage Jela</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>J'envoie de l'amour</title>
   <style>
     body {
-      background-color: #000;
-      color: #fff;
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
+      background-color: black;
+      color: white;
       text-align: center;
-      padding: 2rem;
+      padding: 2em;
     }
-    .logo {
-      font-size: 2rem;
-      margin-bottom: 1rem;
+    .error {
+      color: #f36;
+      font-size: 1.2em;
+      margin-top: 2em;
     }
-    .loading {
-      margin-top: 2rem;
-      font-size: 1.2rem;
+    .apk-link {
+      background-color: #ff69b4;
+      color: black;
+      padding: 0.8em 1.2em;
+      font-weight: bold;
+      border-radius: 8px;
+      text-decoration: none;
     }
   </style>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const params = new URLSearchParams(window.location.search);
-      const recipientId = params.get("recipient");
-
-      if (!recipientId) {
-        document.body.innerHTML = "<h2>❌ Lien invalide : paramètre 'recipient' manquant.</h2>";
-        return;
-      }
-
-      const fallback = "https://play.google.com/store/apps/details?id=com.jela.app"; // à adapter
-      const androidIntent = `intent://jela.app/redirect?recipient=${recipientId}#Intent;scheme=https;package=com.jela.app;end`;
-
-      window.location.href = androidIntent;
-
-      // Fallback si rien ne se passe (non Android)
-      setTimeout(() => {
-        window.location.href = fallback;
-      }, 1500);
-    });
-  </script>
 </head>
 <body>
-  <div class="logo">💌 J'envoie de l'amour</div>
-  <div class="loading">Connexion en cours avec l'application...</div>
+  <h1>💌 J'envoie de l'amour</h1>
+  <p id="message">Connexion en cours avec l'application...</p>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const recipient = urlParams.get("recipient");
+
+    if (!recipient) {
+      document.getElementById("message").innerHTML = "<span class='error'>❌ Lien invalide : paramètre 'recipient' manquant.</span>";
+    } else {
+      // Tentative d'ouverture via l'app
+      window.location.href = `intent://jela.app/open?recipient=${recipient}#Intent;scheme=https;package=com.jela.app;end`;
+
+      // Après 2 secondes sans ouverture, proposer le téléchargement de l'APK
+      setTimeout(() => {
+        document.getElementById("message").innerHTML = `
+          <p>L'application n'est pas installée.</p>
+          <p><a class='apk-link' href='https://example.com/jela.apk' download>Télécharger l'application</a></p>
+        `;
+      }, 2000);
+    }
+  </script>
 </body>
 </html>
