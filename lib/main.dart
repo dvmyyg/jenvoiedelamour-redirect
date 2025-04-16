@@ -21,7 +21,7 @@ import 'services/device_service.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print("🔙 Message reçu en arrière-plan : \${message.messageId}");
+  print("🔙 Message reçu en arrière-plan : ${message.messageId}");
 }
 
 // 🧭 Détermine le rôle de l'appareil
@@ -51,7 +51,7 @@ Future<void> _initializeNotifications() async {
   );
 
   // ✅ Optionnel : log le statut des permissions
-  print('🔐 Notification permission: \${settings.authorizationStatus}');
+  print('🔐 Notification permission: ${settings.authorizationStatus}');
 }
 
 Future<void> _handleDynamicLink(String deviceId) async {
@@ -94,7 +94,7 @@ Future<void> main() async {
 
   // 🌍 Détection automatique de la langue du téléphone
   final String deviceLang = PlatformDispatcher.instance.locale.languageCode;
-  print("🌐 Langue du téléphone : \$deviceLang");
+  print("🌐 Langue du téléphone : $deviceLang");
 
   // 🔥 Initialise Firebase + enregistre l'appareil dans Firestore
   await Firebase.initializeApp();
@@ -105,7 +105,7 @@ Future<void> main() async {
 
   // 📱 Ajouté le 10/04/2025 pour obtenir le token FCM
   final token = await FirebaseMessaging.instance.getToken();
-  print("📱 FCM Token: \$token");
+  print("📱 FCM Token: $token");
 
   // 🔔 Initialise les notifications (channel + permission)
   await _initializeNotifications();

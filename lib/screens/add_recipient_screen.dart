@@ -66,7 +66,7 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
   }
 
   void _sharePairingLink(String recipientId) {
-    final link = 'https://jela.page.link/?recipient=$recipientId';
+    final link = 'https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=$recipientId';
     Share.share(
       '💌 Clique ici pour t’appairer avec moi dans l’app J’envoie de l’amour :\n$link',
       subject: 'Lien d’appairage',

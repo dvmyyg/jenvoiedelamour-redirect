@@ -37,7 +37,7 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
     super.initState();
     _displayNameController = TextEditingController(text: widget.recipient.displayName);
     _iconController = TextEditingController(text: widget.recipient.icon);
-    _selectedRelationKey = widget.recipient.relation; // ex: "maman"
+    _selectedRelationKey = widget.recipient.relation;
   }
 
   Future<void> _saveChanges() async {
@@ -51,7 +51,7 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
 
     await docRef.update({
       'displayName': _displayNameController.text.trim(),
-      'relation': _selectedRelationKey, // stocke la clé uniquement
+      'relation': _selectedRelationKey,
       'icon': _iconController.text.trim(),
     });
 
@@ -59,7 +59,7 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
   }
 
   void _sharePairingLink() {
-    final link = 'https://jela.page.link/?recipient=${widget.recipient.id}';
+    final link = 'https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${widget.recipient.id}';
     Share.share(
       '💌 Clique ici pour t’appairer avec moi dans l’app J’envoie de l’amour :\n$link',
       subject: 'Lien d’appairage',
