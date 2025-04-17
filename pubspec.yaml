@@ -1,5 +1,7 @@
-name: jelamvp01 # nom technique
-description: "L'app qui envoie de l'amour ❤️" # descriptif commercial
+# 📄 pubspec.yaml
+
+name: jelamvp01
+description: "L'app qui envoie de l'amour ❤️"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -18,18 +20,11 @@ dependencies:
   firebase_messaging: ^14.7.0
   firebase_analytics: ^10.8.0
 
-  # ajout le 14/04/2025 pour partager un lien d'inscription
-  firebase_dynamic_links: ^5.4.8
   share_plus: ^7.2.1
-
-  # ajout le 09/04/2025 pour les notifications locales
   flutter_local_notifications: ^17.2.4
   device_info_plus: ^10.0.0
-
-  # ajout le 08/04/2025 pour la communication bidirectionnelle
   shared_preferences: ^2.2.2
   uuid: ^4.0.0
-
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

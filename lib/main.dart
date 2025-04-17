@@ -5,16 +5,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
-import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 
-// 🔐 Ajouté pour la gestion des permissions Android 13+
+// 🔐 Notifications locales
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-// 📌 Ajouté le 08/04/2025 pour la partie bidirectionnelle
+// 📌 Appairage + préférences
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-// 📦 Ajouté le 09/04/2025 pour la partie refactoring
+// 🌟 Écrans + services
 import 'screens/love_screen.dart';
 import 'services/firestore_service.dart';
 import 'services/device_service.dart';
@@ -24,25 +23,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("🔙 Message reçu en arrière-plan : ${message.messageId}");
 }
 
-// 🧭 Détermine le rôle de l'appareil
-const bool isReceiver = true; // ← Xiaomi B = true, Xiaomi A = false
+// 🧭 Rôle : true = receveur, false = émetteur
+const bool isReceiver = true;
 
-// 🔔 Obligatoire pour les notifications locales (Android)
+// 🔔 Plugin notifications locales
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
-/// ⚙️ Initialise la gestion des notifications (canaux, permissions, etc.)
 Future<void> _initializeNotifications() async {
   const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  final InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-  );
+  final InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-  // Android 13+ → demande de permission explicite
   final messaging = FirebaseMessaging.instance;
   NotificationSettings settings = await messaging.requestPermission(
     alert: true,
@@ -50,17 +46,18 @@ Future<void> _initializeNotifications() async {
     sound: true,
   );
 
-  // ✅ Optionnel : log le statut des permissions
   print('🔐 Notification permission: ${settings.authorizationStatus}');
 }
 
-Future<void> _handleDynamicLink(String deviceId) async {
-  final PendingDynamicLinkData? data = await FirebaseDynamicLinks.instance.getInitialLink();
+Future<void> _handleManualLink(String deviceId) async {
+  final Uri deepLink = Uri.base;
 
-  final Uri? deepLink = data?.link;
-  if (deepLink != null && deepLink.queryParameters.containsKey('recipient')) {
+  print("🔗 Lien reçu via Uri.base : $deepLink");
+
+  if (deepLink.queryParameters.containsKey('recipient')) {
     final recipientId = deepLink.queryParameters['recipient'];
-    if (recipientId != null) {
+
+    if (recipientId != null && recipientId.isNotEmpty) {
       final docRef = FirebaseFirestore.instance
           .collection('devices')
           .doc(deviceId)
@@ -70,18 +67,19 @@ Future<void> _handleDynamicLink(String deviceId) async {
       await docRef.update({'deviceId': deviceId});
       print("✅ Appairage terminé avec le destinataire $recipientId");
 
-      // Affichage d’un message simple via Snackbar (ou autre interface dédiée à terme)
-      Future.delayed(Duration(seconds: 1), () {
+      Future.delayed(const Duration(seconds: 1), () {
         runApp(MaterialApp(
           home: Scaffold(
             backgroundColor: Colors.black,
-            body: Center(
-              child: Text("✅ Appairage réussi !", style: TextStyle(color: Colors.white, fontSize: 22)),
+            body: const Center(
+              child: Text("✅ Appairage réussi !",
+                  style: TextStyle(color: Colors.white, fontSize: 22)),
             ),
           ),
         ));
       });
-      await Future.delayed(Duration(seconds: 2));
+
+      await Future.delayed(const Duration(seconds: 2));
     }
   }
 }
@@ -89,35 +87,24 @@ Future<void> _handleDynamicLink(String deviceId) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🧠 Identifiant local pour ce device
   final deviceId = await getDeviceId();
-
-  // 🌍 Détection automatique de la langue du téléphone
   final String deviceLang = PlatformDispatcher.instance.locale.languageCode;
   print("🌐 Langue du téléphone : $deviceLang");
 
-  // 🔥 Initialise Firebase + enregistre l'appareil dans Firestore
   await Firebase.initializeApp();
   await registerDevice(deviceId, isReceiver);
 
-  // 🔁 Ajouté le 10/04/2025 pour la réception en arrière-plan (FCM)
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // 📱 Ajouté le 10/04/2025 pour obtenir le token FCM
   final token = await FirebaseMessaging.instance.getToken();
   print("📱 FCM Token: $token");
 
-  // 🔔 Initialise les notifications (channel + permission)
   await _initializeNotifications();
+  await _handleManualLink(deviceId);
 
-  // 🔗 Gestion du lien d’appairage
-  await _handleDynamicLink(deviceId);
-
-  // 🏁 Lancement de l'app en transmettant la langue
   runApp(MyApp(deviceId: deviceId, deviceLang: deviceLang));
 }
 
-// 🌈 Interface principale de l'application
 class MyApp extends StatelessWidget {
   final String deviceId;
   final String deviceLang;
@@ -128,9 +115,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Jela',
-      theme: ThemeData(
-        useMaterial3: true,
-      ),
+      theme: ThemeData(useMaterial3: true),
       home: LoveScreen(
         deviceId: deviceId,
         isReceiver: isReceiver,
