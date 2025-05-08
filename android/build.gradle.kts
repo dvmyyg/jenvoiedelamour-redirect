@@ -1,3 +1,5 @@
+//  android/build.gradle.kts
+
 allprojects {
     repositories {
         google()
@@ -24,6 +26,6 @@ plugins {
     // ...
 
     // Add the dependency for the Google services Gradle plugin
-    id("com.google.gms.google-services") version "4.4.2" apply false
+    id("com.google.gms.google-services") apply false // version "4.4.2" retiré
 
 }
