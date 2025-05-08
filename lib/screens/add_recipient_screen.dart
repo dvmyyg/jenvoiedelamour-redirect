@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:flutter/services.dart';
 import '../services/i18n_service.dart';
 
 class AddRecipientScreen extends StatefulWidget {
   final String deviceId;
   final String deviceLang;
 
-  const AddRecipientScreen({super.key, required this.deviceId, required this.deviceLang});
+  const AddRecipientScreen({
+    super.key,
+    required this.deviceId,
+    required this.deviceLang,
+  });
 
   @override
   State<AddRecipientScreen> createState() => _AddRecipientScreenState();
@@ -23,7 +26,13 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
   final _iconController = TextEditingController();
 
   final List<String> relationKeys = [
-    'compagne', 'compagnon', 'enfant', 'maman', 'papa', 'ami', 'autre'
+    'compagne',
+    'compagnon',
+    'enfant',
+    'maman',
+    'papa',
+    'ami',
+    'autre',
   ];
   late String _selectedRelationKey;
 
@@ -61,12 +70,14 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
       'deviceId': null,
     });
 
+    if (!mounted) return; // ✅ protège l'utilisation de context
     _sharePairingLink(id);
     Navigator.pop(context, true);
   }
 
   void _sharePairingLink(String recipientId) {
-    final link = 'https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=$recipientId';
+    final link =
+        'https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=$recipientId';
     Share.share(
       '💌 Clique ici pour t’appairer avec moi dans l’app J’envoie de l’amour :\n$link',
       subject: 'Lien d’appairage',
@@ -124,7 +135,8 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
             borderSide: BorderSide(color: Colors.pink),
           ),
         ),
-        validator: (value) => value == null || value.isEmpty ? 'Champ requis' : null,
+        validator:
+            (value) => value == null || value.isEmpty ? 'Champ requis' : null,
       ),
     );
   }
@@ -134,13 +146,17 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
         value: _selectedRelationKey,
-        items: relationKeys.map((key) {
-          return DropdownMenuItem(
-            value: key,
-            child: Text(getUILabel(key, widget.deviceLang)),
-          );
-        }).toList(),
-        onChanged: (val) => setState(() => _selectedRelationKey = val ?? relationKeys.first),
+        items:
+            relationKeys.map((key) {
+              return DropdownMenuItem(
+                value: key,
+                child: Text(getUILabel(key, widget.deviceLang)),
+              );
+            }).toList(),
+        onChanged:
+            (val) => setState(
+              () => _selectedRelationKey = val ?? relationKeys.first,
+            ),
         dropdownColor: Colors.black,
         style: const TextStyle(color: Colors.white),
         decoration: const InputDecoration(

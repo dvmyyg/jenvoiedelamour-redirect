@@ -1,5 +1,6 @@
 // 📄 lib/screens/love_screen.dart
 
+import '../utils/debug_log.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,14 +15,21 @@ import '../services/recipient_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("🔔 [FCM-BG] Notification reçue en arrière-plan : ${message.notification?.title}");
+  debugLog(
+    "🔔 [FCM-BG] Notification reçue en arrière-plan : ${message.notification?.title}",
+  );
 }
 
 class LoveScreen extends StatefulWidget {
   final String deviceId;
   final bool isReceiver;
   final String deviceLang;
-  const LoveScreen({super.key, required this.deviceId, required this.isReceiver, required this.deviceLang});
+  const LoveScreen({
+    super.key,
+    required this.deviceId,
+    required this.isReceiver,
+    required this.deviceLang,
+  });
 
   @override
   State<LoveScreen> createState() => _LoveScreenState();
@@ -52,30 +60,39 @@ class _LoveScreenState extends State<LoveScreen> {
         .doc(widget.deviceId)
         .snapshots()
         .listen((doc) async {
-      if (doc.exists && doc.data()?['messageType'] != null) {
-        final String type = doc.data()?['messageType'];
-        final String? receivedSenderName = doc.data()?['senderName'];
+          final data = doc.data();
+          if (data != null && data['messageType'] != null) {
+            final messageType = data['messageType'] as String;
+            final receivedSenderName = data['senderName'] as String?;
 
-        print("🌟 Message reçu : $type");
+            debugLog("🌟 Message reçu : $messageType");
 
-        setState(() => showIcon = true);
-        final localizedBody = getMessageBody(type, widget.deviceLang);
-        await _showNotification(localizedBody, receivedSenderName);
+            setState(() => showIcon = true);
+            final localizedBody = getMessageBody(
+              messageType,
+              widget.deviceLang,
+            );
+            await _showNotification(localizedBody, receivedSenderName);
 
-        await Future.delayed(const Duration(seconds: 2));
-        setState(() => showIcon = false);
+            await Future.delayed(const Duration(seconds: 2));
+            setState(() => showIcon = false);
 
-        await FirebaseFirestore.instance
-            .collection('devices')
-            .doc(widget.deviceId)
-            .update({'messageType': FieldValue.delete()});
-      }
-    });
+            await FirebaseFirestore.instance
+                .collection('devices')
+                .doc(widget.deviceId)
+                .update({'messageType': FieldValue.delete()});
+          }
+        });
   }
 
   Future<void> _loadDisplayName() async {
-    final doc = await FirebaseFirestore.instance.collection('devices').doc(widget.deviceId).get();
-    senderName = doc.data()?['displayName'] ?? null;
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('devices')
+            .doc(widget.deviceId)
+            .get();
+    senderName = doc.data()?['displayName'] as String?;
+    debugLog("💛 Nom du device (senderName) : $senderName");
   }
 
   Future<void> _loadRecipients() async {
@@ -84,6 +101,7 @@ class _LoveScreenState extends State<LoveScreen> {
     setState(() {
       recipients = list;
     });
+    debugLog("👥 ${recipients.length} destinataires chargés depuis Firestore");
   }
 
   @override
@@ -97,40 +115,39 @@ class _LoveScreenState extends State<LoveScreen> {
     await FirebaseFirestore.instance
         .collection('devices')
         .doc(widget.deviceId)
-        .update({
-      'isForeground': isForeground,
-      'lastPing': DateTime.now(),
-    });
-    print("📱 isForeground=$isForeground mis à jour pour ${widget.deviceId}");
+        .update({'isForeground': isForeground, 'lastPing': DateTime.now()});
+    debugLog(
+      "📱 isForeground=$isForeground mis à jour pour ${widget.deviceId}",
+    );
   }
 
   Future<void> _initNotifications() async {
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const initSettings = InitializationSettings(android: androidSettings);
     await flutterLocalNotificationsPlugin.initialize(initSettings);
   }
 
   Future<void> _configureFCM() async {
-    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-      alert: false,
-      badge: false,
-      sound: false,
-    );
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+          alert: false,
+          badge: false,
+          sound: false,
+        );
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      final type = message.data['messageType'] ?? 'heart';
-      print("📨 [FCM] Notification reçue (avant-plan): type=$type");
+      final messageType = message.data['messageType'] as String? ?? 'heart';
+      debugLog("📨 [FCM] Notification reçue (avant-plan): type=$messageType");
 
       setState(() => showIcon = true);
       await Future.delayed(const Duration(seconds: 2));
       setState(() => showIcon = false);
     });
-
-    final fcmToken = await FirebaseMessaging.instance.getToken();
-    print("🪪 Token FCM : $fcmToken");
   }
 
   @override
@@ -156,10 +173,11 @@ class _LoveScreenState extends State<LoveScreen> {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => RecipientsScreen(
-                    deviceId: widget.deviceId,
-                    deviceLang: widget.deviceLang,
-                  ),
+                  builder:
+                      (_) => RecipientsScreen(
+                        deviceId: widget.deviceId,
+                        deviceLang: widget.deviceLang,
+                      ),
                 ),
               );
               _loadRecipients();
@@ -182,10 +200,11 @@ class _LoveScreenState extends State<LoveScreen> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => RecipientsScreen(
-                              deviceId: widget.deviceId,
-                              deviceLang: widget.deviceLang,
-                            ),
+                            builder:
+                                (_) => RecipientsScreen(
+                                  deviceId: widget.deviceId,
+                                  deviceLang: widget.deviceLang,
+                                ),
                           ),
                         );
                         _loadRecipients();
@@ -208,14 +227,18 @@ class _LoveScreenState extends State<LoveScreen> {
                   return Center(
                     child: GestureDetector(
                       onTap: () {
+                        debugLog(
+                          "📨 Message tap sur destinataire : ${r.displayName} (${r.id})",
+                        );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => SendMessageScreen(
-                              deviceId: widget.deviceId,
-                              deviceLang: widget.deviceLang,
-                              recipient: r,
-                            ),
+                            builder:
+                                (_) => SendMessageScreen(
+                                  deviceId: widget.deviceId,
+                                  deviceLang: widget.deviceLang,
+                                  recipient: r,
+                                ),
                           ),
                         );
                       },
@@ -232,8 +255,17 @@ class _LoveScreenState extends State<LoveScreen> {
                           children: [
                             Text(r.icon, style: const TextStyle(fontSize: 36)),
                             const SizedBox(height: 10),
-                            Text(r.displayName, style: const TextStyle(color: Colors.white, fontSize: 18)),
-                            Text(r.relation, style: const TextStyle(color: Colors.white70)),
+                            Text(
+                              r.displayName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                              ),
+                            ),
+                            Text(
+                              r.relation,
+                              style: const TextStyle(color: Colors.white70),
+                            ),
                           ],
                         ),
                       ),
@@ -243,13 +275,17 @@ class _LoveScreenState extends State<LoveScreen> {
               },
             ),
           ),
-          if (showIcon) const Padding(
-            padding: EdgeInsets.only(bottom: 20),
-            child: Icon(Icons.star, color: Colors.amber, size: 100),
-          ),
+          if (showIcon)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 20),
+              child: Icon(Icons.star, color: Colors.amber, size: 100),
+            ),
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Text("ID: ${widget.deviceId}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            child: Text(
+              "ID: ${widget.deviceId}",
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -259,10 +295,11 @@ class _LoveScreenState extends State<LoveScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => SettingsScreen(
-                currentLang: widget.deviceLang,
-                deviceId: widget.deviceId,
-              ),
+              builder:
+                  (_) => SettingsScreen(
+                    currentLang: widget.deviceLang,
+                    deviceId: widget.deviceId,
+                  ),
             ),
           );
         },
@@ -270,10 +307,14 @@ class _LoveScreenState extends State<LoveScreen> {
     );
   }
 
-  Future<void> _showNotification(String body, String? receivedSenderName) async {
-    final title = receivedSenderName != null
-        ? "💌 $receivedSenderName t’a envoyé un message"
-        : getUILabel('message_received_title', widget.deviceLang);
+  Future<void> _showNotification(
+    String body,
+    String? receivedSenderName,
+  ) async {
+    final title =
+        receivedSenderName != null
+            ? "💌 $receivedSenderName t’a envoyé un message"
+            : getUILabel('message_received_title', widget.deviceLang);
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'love_channel',
@@ -284,7 +325,11 @@ class _LoveScreenState extends State<LoveScreen> {
       enableVibration: true,
     );
 
-    final androidPlugin = flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin =
+        flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
     await androidPlugin?.createNotificationChannel(channel);
 
     final androidDetails = AndroidNotificationDetails(
@@ -306,6 +351,6 @@ class _LoveScreenState extends State<LoveScreen> {
       notificationDetails,
     );
 
-    print("📢 Notification locale envoyée !");
+    debugLog("📢 Notification locale envoyée !");
   }
 }

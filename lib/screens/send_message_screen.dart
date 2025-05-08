@@ -1,5 +1,6 @@
 // 📄 lib/screens/send_message_screen.dart
 
+import '../utils/debug_log.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
@@ -54,10 +55,7 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
               child: Center(
                 child: Text(
                   previewText,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    color: Colors.white,
-                  ),
+                  style: const TextStyle(fontSize: 22, color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -70,22 +68,46 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
 
   Future<void> sendLove(String type) async {
     final otherDeviceId = widget.recipient.deviceId;
-    if (otherDeviceId == null || !widget.recipient.paired) return;
 
-    HapticFeedback.mediumImpact(); // retour haptique
+    if (!widget.recipient.paired) {
+      debugLog("⚠️ Envoi annulé : destinataire non appairé", level: 'WARN');
+      return;
+    }
 
-    await FirebaseFirestore.instance
-        .collection('devices')
-        .doc(otherDeviceId)
-        .update({
-      'messageType': type,
-      'senderName': widget.recipient.displayName,
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(getUILabel('message_sent', widget.deviceLang))),
+    debugLog(
+      "📤 Envoi de message de type '\$type' vers deviceId=\$otherDeviceId",
+      level: 'INFO',
     );
 
-    Navigator.pop(context);
+    try {
+      HapticFeedback.mediumImpact(); // retour haptique
+
+      await FirebaseFirestore.instance
+          .collection('devices')
+          .doc(otherDeviceId)
+          .update({
+            'messageType': type,
+            'senderName': widget.recipient.displayName,
+          });
+
+      debugLog(
+        "✅ Message envoyé à \$otherDeviceId : type=\$type",
+        level: 'SUCCESS',
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(getUILabel('message_sent', widget.deviceLang))),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      debugLog("❌ Erreur lors de l'envoi de message : \$e", level: 'ERROR');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("❌ Échec de l'envoi : \$e")));
+      }
+    }
   }
 }

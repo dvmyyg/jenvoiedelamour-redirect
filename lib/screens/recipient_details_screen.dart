@@ -1,5 +1,7 @@
 // 📄 lib/screens/recipient_details_screen.dart
 
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,7 +37,9 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
   }
 
   Future<void> handlePairing(String code) async {
-    final pairingRef = FirebaseFirestore.instance.collection('pairings').doc(code);
+    final pairingRef = FirebaseFirestore.instance
+        .collection('pairings')
+        .doc(code);
     final doc = await pairingRef.get();
 
     if (!doc.exists) {
@@ -44,7 +48,9 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
       _listenForPairingCompletion(pairingRef);
     } else {
       final data = doc.data();
-      if (data != null && data['deviceA'] != widget.deviceId && data['deviceB'] == null) {
+      if (data != null &&
+          data['deviceA'] != widget.deviceId &&
+          data['deviceB'] == null) {
         await pairingRef.update({'deviceB': widget.deviceId});
         pairingStatus = getUILabel('pairing_status_success', widget.deviceLang);
         await _markRecipientAsPaired(data['deviceA']);
@@ -58,6 +64,7 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
         .doc(widget.deviceId)
         .update({'pairingCode': code});
 
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -68,6 +75,7 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
       if (data != null && data['deviceB'] != null) {
         pairingStatus = getUILabel('pairing_status_success', widget.deviceLang);
         await _markRecipientAsPaired(data['deviceB']);
+        if (!mounted) return;
         setState(() {});
         _pairingListener?.cancel();
       }
@@ -80,10 +88,7 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
         .doc(widget.deviceId)
         .collection('recipients')
         .doc(widget.recipient.id)
-        .update({
-      'paired': true,
-      'deviceId': otherDeviceId,
-    });
+        .update({'paired': true, 'deviceId': otherDeviceId});
   }
 
   @override
@@ -107,17 +112,21 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
             _buildRow("Icône", recipient.icon),
             _buildRow("Appairé", recipient.paired ? "Oui" : "Non"),
             const SizedBox(height: 20),
-            const Text("Packs autorisés :", style: TextStyle(color: Colors.white, fontSize: 16)),
+            const Text(
+              "Packs autorisés :",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
-              children: recipient.allowedPacks.map((pack) {
-                return Chip(
-                  label: Text(pack),
-                  backgroundColor: Colors.pink,
-                  labelStyle: const TextStyle(color: Colors.white),
-                );
-              }).toList(),
+              children:
+                  recipient.allowedPacks.map((pack) {
+                    return Chip(
+                      label: Text(pack),
+                      backgroundColor: Colors.pink,
+                      labelStyle: const TextStyle(color: Colors.white),
+                    );
+                  }).toList(),
             ),
 
             if (!recipient.paired) ...[
@@ -130,8 +139,12 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
                 decoration: InputDecoration(
                   hintText: getUILabel('pairing_code_hint', widget.deviceLang),
                   hintStyle: const TextStyle(color: Colors.grey),
-                  enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                  focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.pink)),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.pink),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -142,7 +155,11 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
                     handlePairing(code);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(getUILabel('invalid_code', widget.deviceLang))),
+                      SnackBar(
+                        content: Text(
+                          getUILabel('invalid_code', widget.deviceLang),
+                        ),
+                      ),
                     );
                   }
                 },
@@ -155,7 +172,10 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
               ),
               const SizedBox(height: 10),
               if (pairingStatus != null)
-                Text(pairingStatus!, style: const TextStyle(color: Colors.amber)),
+                Text(
+                  pairingStatus!,
+                  style: const TextStyle(color: Colors.amber),
+                ),
             ],
 
             const Spacer(),
@@ -165,17 +185,21 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
                   final updated = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => EditRecipientScreen(
-                        deviceId: widget.deviceId,
-                        deviceLang: widget.deviceLang, // ✅ AJOUT ICI
-                        recipient: widget.recipient,
-                      ),
+                      builder:
+                          (_) => EditRecipientScreen(
+                            deviceId: widget.deviceId,
+                            deviceLang: widget.deviceLang,
+                            recipient: widget.recipient,
+                          ),
                     ),
                   );
 
+                  if (!mounted) return;
                   if (updated == true) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Modifications enregistrées")),
+                      const SnackBar(
+                        content: Text("Modifications enregistrées"),
+                      ),
                     );
                     Navigator.pop(context);
                   }
@@ -199,7 +223,7 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
                 icon: const Icon(Icons.delete),
                 label: const Text("Supprimer ce destinataire"),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -213,12 +237,12 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
         children: [
           Text(
             "$label : ",
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.white),
-          ),
+          Text(value, style: const TextStyle(color: Colors.white)),
         ],
       ),
     );
@@ -227,20 +251,21 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
   void _confirmDelete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("❌ Confirmation"),
-        content: const Text("Supprimer ce destinataire ?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Annuler"),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text("❌ Confirmation"),
+            content: const Text("Supprimer ce destinataire ?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text("Annuler"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text("Supprimer"),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("Supprimer"),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -257,9 +282,10 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
 
     await docRef.delete();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Destinataire supprimé ✅")),
-    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Destinataire supprimé ✅")));
 
     Navigator.pop(context);
   }

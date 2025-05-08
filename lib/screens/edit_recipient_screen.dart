@@ -29,13 +29,21 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
   late String _selectedRelationKey;
 
   final List<String> relationKeys = [
-    'compagne', 'compagnon', 'enfant', 'maman', 'papa', 'ami', 'autre'
+    'compagne',
+    'compagnon',
+    'enfant',
+    'maman',
+    'papa',
+    'ami',
+    'autre',
   ];
 
   @override
   void initState() {
     super.initState();
-    _displayNameController = TextEditingController(text: widget.recipient.displayName);
+    _displayNameController = TextEditingController(
+      text: widget.recipient.displayName,
+    );
     _iconController = TextEditingController(text: widget.recipient.icon);
     _selectedRelationKey = widget.recipient.relation;
   }
@@ -55,14 +63,71 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
       'icon': _iconController.text.trim(),
     });
 
+    if (!mounted) return;
     Navigator.pop(context, true);
   }
 
   void _sharePairingLink() {
-    final link = 'https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${widget.recipient.id}';
+    final link =
+        'https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${widget.recipient.id}';
     Share.share(
       '💌 Clique ici pour t’appairer avec moi dans l’app J’envoie de l’amour :\n$link',
       subject: 'Lien d’appairage',
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.pink),
+          ),
+        ),
+        validator:
+            (value) => value == null || value.isEmpty ? 'Champ requis' : null,
+      ),
+    );
+  }
+
+  Widget _buildRelationDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: _selectedRelationKey,
+        items:
+            relationKeys.map((key) {
+              return DropdownMenuItem(
+                value: key,
+                child: Text(getUILabel(key, widget.deviceLang)),
+              );
+            }).toList(),
+        onChanged: (val) {
+          if (val != null) {
+            setState(() => _selectedRelationKey = val);
+          }
+        },
+        dropdownColor: Colors.black,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          labelText: "Relation",
+          labelStyle: TextStyle(color: Colors.white),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.pink),
+          ),
+        ),
+      ),
     );
   }
 
@@ -100,64 +165,11 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
                 icon: const Icon(Icons.link),
                 label: const Text("Partager le lien d’appairage"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[850],
-                  foregroundColor: Colors.white70,
+                  backgroundColor: Colors.grey,
+                  foregroundColor: Colors.white,
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: controller,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Colors.white),
-          enabledBorder: const OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.white24),
-          ),
-          focusedBorder: const OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.pink),
-          ),
-        ),
-        validator: (value) => value == null || value.isEmpty ? 'Champ requis' : null,
-      ),
-    );
-  }
-
-  Widget _buildRelationDropdown() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: DropdownButtonFormField<String>(
-        value: _selectedRelationKey,
-        items: relationKeys.map((key) {
-          return DropdownMenuItem(
-            value: key,
-            child: Text(getUILabel(key, widget.deviceLang)),
-          );
-        }).toList(),
-        onChanged: (val) {
-          if (val != null) {
-            setState(() => _selectedRelationKey = val);
-          }
-        },
-        dropdownColor: Colors.black,
-        style: const TextStyle(color: Colors.white),
-        decoration: const InputDecoration(
-          labelText: "Relation",
-          labelStyle: TextStyle(color: Colors.white),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.white24),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.pink),
           ),
         ),
       ),
