@@ -29,14 +29,18 @@ class AuthService {
         level: 'INFO',
       );
 
+      final data = {
+        'uid': user.uid,
+        'email': user.email,
+        'deviceId': deviceId,
+        'lang': lang,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      debugLog("📤 [register] Données préparées pour Firestore : $data");
+
       try {
-        await _db.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'email': user.email,
-          'deviceId': deviceId,
-          'lang': lang,
-          'createdAt': DateTime.now().toIso8601String(),
-        });
+        await _db.collection('users').doc(user.uid).set(data);
 
         debugLog(
           "✅ [register] Utilisateur enregistré dans Firestore : ${user.uid}",

@@ -2,12 +2,19 @@
 
 ---
 
-#### 🐞 1. Problème d'inscription Firebase (App Check)
-- **Contexte :** L'inscription crée bien un compte dans Firebase Auth, mais le téléphone retourne une erreur.
-- **Erreur détectée :** `No AppCheckProvider installed`
-- **Cause probable :** App Check Firebase est activé mais mal configuré (signature SHA-256 manquante, AppCheck non activé côté console avec Play Integrity).
-- **Conséquence :** Erreur bloquante sur certaines fonctionnalités dès l'inscription.
-- **Correction prévue :** Générer et ajouter la SHA-256 dans Firebase Console + activer Play Integrity + configurer proprement `firebase_app_check`.
+#### 🐞 1. Problème d'inscription Firebase (résolu)
+- **Contexte :** L'inscription crée bien un compte dans Firebase Auth, mais le téléphone retournait une erreur.
+- **Erreur détectée :** `No AppCheckProvider installed` ou échec silencieux après appel `register()`.
+- **Cause réelle :** App Check Firebase était activé mais mal configuré (absence de signature SHA-256, Play Integrity non activé dans la console).
+- **Conséquence :** L'inscription réussissait côté Auth, mais échouait à enregistrer l'utilisateur dans Firestore (`users/{uid}`).
+- **Correction appliquée :**
+✅ Création d’un compte Google Play
+✅ Validation identité + téléphone
+✅ Création de l’app fr.jela.app
+✅ Ajout de la SHA-256 Google Play dans Firebase
+✅ Téléchargement et remplacement du google-services.json
+✅ Recompilation en release + test sur appareil réel
+✅ Vérification Firebase : requêtes désormais validées (App Check actif)
 
 ---
 
@@ -56,3 +63,41 @@
 #### 🐞 8. Absence de feedback UI lors d’un envoi réussi
 - **Contexte :** Après appui sur un message, seul un `SnackBar` apparaît, sans feedback visuel fort.
 - **Correction suggérée :** Ajouter une animation (💌 qui part ?) ou retour visuel temporaire plus marquant.
+
+---
+
+#### 🐞 9. Inscription réussie dans Firebase Auth mais Firestore non alimenté
+- **Contexte :** Lors de l'inscription via `AuthService.register()`, l'utilisateur est bien créé dans Firebase Auth, mais aucune entrée n'apparaît dans Firestore.
+- **Symptôme :**  
+  - Authentification OK (compte visible dans l’onglet Firebase Authentication)  
+  - Collection `users` absente ou vide dans Firestore  
+  - Aucun log `✅ [register] Utilisateur enregistré dans Firestore` visible en console
+- **Causes possibles :**  
+  - Échec silencieux de l'appel `set()` vers Firestore  
+  - App Check toujours bloquant sur Firestore (même après correction côté Auth)  
+  - Donnée transmise invalide (deviceId ou lang null)
+- **Correction proposée :**  
+  - Ajouter un log juste avant l'appel à Firestore pour vérifier les données transmises  
+  - Vérifier les règles Firestore côté console (permissions `write`)  
+  - Désactiver temporairement App Check sur Firestore pour tester  
+  - Ajouter un retour visuel dans l'app si l'enregistrement échoue
+
+---
+
+#### 🐞 10. Aucune requête App Check validée malgré configuration correcte
+
+- **Contexte :** App Check a été activé avec Play Integrity sur l'application `fr.jela.app`. La SHA-256 de la clé utilisée (`keystore.jks`) a bien été ajoutée dans Firebase Console. L'intégration App Check est en place dans le code (`main.dart`), et l'APK a été généré en release, signé, et installé manuellement sur les appareils A et B.
+- **Symptôme :**
+  - Firebase App Check indique que 100 % des requêtes Firestore sont "non validées"
+  - Aucune requête validée n’apparaît, même après installation et exécution de l’APK signé
+- **Vérifications effectuées :**
+  - ✅ SHA-256 du certificat release extraite avec `./gradlew signingReport`
+  - ✅ SHA-256 strictement identique à celle enregistrée dans Firebase
+  - ✅ App Check activé avec Play Integrity
+  - ✅ App installée manuellement sur A et B, version `release`, signée
+  - ✅ Code Flutter avec `FirebaseAppCheck.instance.activate(...)` bien en place
+- **Analyse finale grâce à Gemini (IA Firebase) :** Le véritable problème vient du fait que Play Integrity n’accepte que les APK signés via la clé de signature d'application gérée par Google Play. Tant que l'application n'est pas publiée (ou en test interne) via Google Play, la SHA-256 à utiliser est celle de Google, non celle du keystore.jks.
+- **Action engagée :** 
+  - Création d'un compte Google Play Console (Validation d'identité en cours)
+  - Ajout prévu de la SHA-256 Google dans Firebase une fois accessible
+  - Reconfiguration d'App Check à suivre une fois la clé valide obtenue

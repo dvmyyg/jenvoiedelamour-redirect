@@ -6,6 +6,7 @@ import '../screens/love_screen.dart';
 import '../screens/login_screen.dart';
 import '../services/device_service.dart';
 import '../services/firestore_service.dart';
+import '../utils/debug_log.dart';
 
 class HomeSelector extends StatefulWidget {
   final String deviceLang;
@@ -31,14 +32,14 @@ class _HomeSelectorState extends State<HomeSelector> {
 
     if (user != null) {
       deviceId = await getDeviceId();
-      final isReceiver = true;
+      const isReceiver = true;
       await registerDevice(deviceId, isReceiver);
       setState(() {
         _isConnected = true;
         _checkingAuth = false;
       });
     } else {
-      deviceId = await getDeviceId(); // ✅ ajouté ici aussi pour non connecté
+      deviceId = await getDeviceId();
       setState(() {
         _isConnected = false;
         _checkingAuth = false;
@@ -48,24 +49,30 @@ class _HomeSelectorState extends State<HomeSelector> {
 
   @override
   Widget build(BuildContext context) {
-    if (_checkingAuth) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.pink),
-        ),
-      );
-    }
-
-    return _isConnected
-        ? LoveScreen(
-            deviceId: deviceId,
-            isReceiver: true,
-            deviceLang: widget.deviceLang,
-          )
-        : LoginScreen(
-            deviceLang: widget.deviceLang,
-            deviceId: deviceId,
-          );
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _checkingAuth
+                ? const Center(
+              child: CircularProgressIndicator(color: Colors.pink),
+            )
+                : _isConnected
+                ? LoveScreen(
+              deviceId: deviceId,
+              isReceiver: true,
+              deviceLang: widget.deviceLang,
+            )
+                : LoginScreen(
+              deviceLang: widget.deviceLang,
+              deviceId: deviceId,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

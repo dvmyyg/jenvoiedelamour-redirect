@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'dart:ui';
 
 // 🔐 Notifications locales
@@ -30,11 +29,11 @@ const bool isReceiver = true;
 
 // 🔔 Plugin notifications locales
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+FlutterLocalNotificationsPlugin();
 
 Future<void> _initializeNotifications() async {
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+  AndroidInitializationSettings('@mipmap/ic_launcher');
 
   final InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
@@ -120,10 +119,7 @@ Future<void> main() async {
   // Initialisation de Firebase avec les options correctes
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Activer Firebase App Check
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.playIntegrity,
-  );
+  // ✅ App Check désactivé
 
   await registerDevice(deviceId, isReceiver);
 

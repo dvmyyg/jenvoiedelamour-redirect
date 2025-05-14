@@ -71,12 +71,18 @@ flutter {
 }
 
 dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:33.2.0"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-storage-ktx")
-    implementation("com.google.firebase:firebase-messaging-ktx")
-    implementation("com.google.firebase:firebase-analytics-ktx")
+    // Importe le BoM Firebase pour gérer les versions
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0")) // Reste sur 33.13.0, c'est bon !
+
+    // Déclare les dépendances des bibliothèques Firebase - utilise les modules principaux maintenant !
+    // Les fonctionnalités KTX sont incluses dans les modules principaux depuis BoM 32.5.0+
+    implementation("com.google.firebase:firebase-auth")       // PAS firebase-auth-ktx
+    implementation("com.google.firebase:firebase-firestore")    // PAS firebase-firestore-ktx
+    implementation("com.google.firebase:firebase-storage")    // PAS firebase-storage-ktx
+    implementation("com.google.firebase:firebase-messaging")    // PAS firebase-messaging-ktx
+    implementation("com.google.firebase:firebase-analytics")    // PAS firebase-analytics-ktx
+
+    // Reste sur coreLibraryDesugaring si tu en as besoin
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 }
 

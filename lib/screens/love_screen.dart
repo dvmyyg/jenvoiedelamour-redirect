@@ -115,7 +115,14 @@ class _LoveScreenState extends State<LoveScreen> {
     await FirebaseFirestore.instance
         .collection('devices')
         .doc(widget.deviceId)
-        .update({'isForeground': isForeground, 'lastPing': DateTime.now()});
+        .set(
+          // <-- Change update en set
+          {
+            'isForeground': isForeground,
+            'lastPing': DateTime.now(),
+          }, // Les données restent les mêmes
+          SetOptions(merge: true), // <-- Ajoute l'option merge: true
+        );
     debugLog(
       "📱 isForeground=$isForeground mis à jour pour ${widget.deviceId}",
     );
