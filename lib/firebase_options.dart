@@ -59,6 +59,6 @@ class DefaultFirebaseOptions {
     appId: '1:1087981035524:android:1d58ca2ac6ef5c52fc5551',
     messagingSenderId: '1087981035524',
     projectId: 'jelamvp01',
-    storageBucket: 'jelamvp01.firebasestorage.app',
+    storageBucket: 'jelamvp01.appspot.com',
   );
 }
