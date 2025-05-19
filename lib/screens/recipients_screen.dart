@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import '../services/recipient_service.dart';
 import '../models/recipient.dart';
-import 'recipient_details_screen.dart';
 import 'add_recipient_screen.dart';
 
 class RecipientsScreen extends StatefulWidget {
@@ -40,9 +39,26 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("👤 Mes destinataires"),
+        title: const Text("Mes destinataires"),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add, color: Colors.white),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AddRecipientScreen(
+                    deviceId: widget.deviceId,
+                    deviceLang: widget.deviceLang,
+                  ),
+                ),
+              );
+              _loadRecipients();
+            },
+          ),
+        ],
       ),
       backgroundColor: Colors.black,
       body: ListView.builder(
@@ -59,41 +75,11 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
               r.relation,
               style: TextStyle(color: Colors.grey[400]),
             ),
-            trailing: Text(
-              r.paired ? "[Appaire]" : "[Non appaire]",
-              style: TextStyle(color: r.paired ? Colors.green : Colors.orange),
-            ),
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => RecipientDetailsScreen(
-                    deviceId: widget.deviceId,
-                    deviceLang: widget.deviceLang, // ✅ Ajout ici
-                    recipient: r,
-                  ),
-                ),
-              );
+              // À adapter selon les fonctionnalités à venir (fiche de profil)
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AddRecipientScreen(
-                deviceId: widget.deviceId,
-                deviceLang: widget.deviceLang,
-              ),
-
-            ),
-          );
-          _loadRecipients(); // recharge la liste après retour
-        },
-        backgroundColor: Colors.pink,
-        child: const Icon(Icons.add),
       ),
     );
   }

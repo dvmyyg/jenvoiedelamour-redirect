@@ -1,4 +1,4 @@
-// lib/services/recipient_service.dart
+// 📄 lib/services/recipient_service.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/recipient.dart';
@@ -14,19 +14,22 @@ class RecipientService {
       .doc(deviceId)
       .collection('recipients');
 
-  // ✅ Fetching recipients
+  // ✅ Récupérer uniquement les destinataires appairés
   Future<List<Recipient>> fetchRecipients() async {
     debugLog("🔄 Chargement des destinataires pour l'appareil : $deviceId");
-    final snapshot = await _recipientsRef.get();
+    final snapshot = await _recipientsRef
+        .where('deviceId', isNotEqualTo: null) // ✅ filtre : uniquement ceux qui sont appairés
+        .get();
+
     debugLog(
-      "✅ ${snapshot.docs.length} destinataires récupérés depuis Firestore",
+      "✅ ${snapshot.docs.length} destinataires connectés récupérés depuis Firestore",
     );
 
     return snapshot.docs
         .map(
           (doc) =>
-              Recipient.fromMap(doc.id, doc.data() as Map<String, dynamic>),
-        )
+          Recipient.fromMap(doc.id, doc.data() as Map<String, dynamic>),
+    )
         .toList();
   }
 
