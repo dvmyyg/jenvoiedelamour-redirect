@@ -56,6 +56,33 @@ String getUILabel(String key, String langCode) {
     'invalid_code': {
       'fr': '⚠️ Code invalide (4 chiffres)', 'de': '⚠️ Ungültiger Code (4 Ziffern)', 'es': '⚠️ Código inválido (4 cifras)', 'en': '⚠️ Invalid code (4 digits)'
     },
+    'profile_title': {
+      'fr': 'Mon profil', 'de': 'Mein Profil', 'es': 'Mi perfil', 'en': 'My Profile',
+    },
+    'profile_firstname_label': {
+      'fr': 'Prénom', 'de': 'Vorname', 'es': 'Nombre', 'en': 'First name',
+    },
+    'profile_firstname_hint': {
+      'fr': 'Entrez votre prénom', 'de': 'Geben Sie Ihren Vornamen ein', 'es': 'Escriba su nombre', 'en': 'Enter your first name',
+    },
+    'profile_email_label': {
+      'fr': 'Mon email (identifiant)', 'de': 'Meine E-Mail (Benutzername)', 'es': 'Mi correo (identificador)', 'en': 'My email (identifier)',
+    },
+    'profile_save_button': {
+      'fr': 'Sauvegarder', 'de': 'Speichern', 'es': 'Guardar', 'en': 'Save',
+    },
+    'profile_saved': {
+      'fr': 'Profil mis à jour ✅', 'de': 'Profil aktualisiert ✅', 'es': 'Perfil actualizado ✅', 'en': 'Profile updated ✅',
+    },
+    'profile_save_error': {
+      'fr': 'Erreur de sauvegarde', 'de': 'Fehler beim Speichern', 'es': 'Error al guardar', 'en': 'Error saving',
+    },
+    'profile_load_error': {
+      'fr': 'Erreur de chargement', 'de': 'Fehler beim Laden', 'es': 'Error al cargar', 'en': 'Loading error',
+    },
+    'logout_button': {
+      'fr': 'Déconnexion', 'de': 'Abmelden', 'es': 'Cerrar sesión', 'en': 'Logout',
+    },
   };
 
   return labels[key]?[langCode] ?? labels[key]?['en'] ?? key;
@@ -126,8 +153,8 @@ String getPreviewText(String type, String langCode) {
       }[langCode] ?? 'Look at the sky 🌌';
     case 'thinking_of_you':
       return {
-        'fr': 'Je pense à toi 🤍', 'de': 'Ich denke an dich 🤍', 'es': 'Estoy pensando en ti 🤍', 'en': 'Thinking of you 🤍',
-      }[langCode] ?? 'Thinking of you 🤍';
+        'fr': 'Je pense à toi 🪰', 'de': 'Ich denke an dich 🪰', 'es': 'Estoy pensando en ti 🪰', 'en': 'Thinking of you 🪰',
+      }[langCode] ?? 'Thinking of you 🪰';
     case 'heart':
     default:
       return {

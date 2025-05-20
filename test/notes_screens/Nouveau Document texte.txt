@@ -1,0 +1,12 @@
+
+lib/screens/email_verification_screen.dart
+lib/screens/home_selector.dart
+lib/screens/login_screen.dart
+lib/screens/profile_screen.dart
+lib/screens/register_screen.dart
+
+lib/services/auth_service.dart
+
+
+a retirer :
+lib/screens/settings_screen.dart

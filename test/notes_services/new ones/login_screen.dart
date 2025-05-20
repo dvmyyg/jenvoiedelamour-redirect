@@ -1,26 +1,32 @@
-// 📄 lib/screens/register_screen.dart
+// 📄 lib/screens/login_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/i18n_service.dart';
 import '../utils/debug_log.dart';
 
-class RegisterScreen extends StatefulWidget {
+class LoginScreen extends StatefulWidget {
+  final String deviceId;
   final String deviceLang;
-  const RegisterScreen({super.key, required this.deviceLang});
+
+  const LoginScreen({
+    super.key,
+    required this.deviceId,
+    required this.deviceLang,
+  });
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  String? _errorMessage;
-  String? _successMessage;
+  String? _error;
 
-  Future<void> _register() async {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
@@ -29,25 +35,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       setState(() {
         _isLoading = true;
-        _errorMessage = null;
-        _successMessage = null;
+        _error = null;
       });
 
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: password);
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
       final user = credential.user;
+
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
-        _successMessage =
-            "Un email de vérification a été envoyé à $email. Veuillez vérifier votre boîte mail.";
+        setState(() {
+          _error = getUILabel('email_verification_sent', widget.deviceLang);
+        });
+      } else {
+        debugLog("✅ Connexion réussie : ${user?.email}");
       }
-
-      debugLog("✅ Utilisateur enregistré : $email");
     } on FirebaseAuthException catch (e) {
-      debugLog("❌ Erreur d'enregistrement : ${e.message}", level: 'ERROR');
+      debugLog("❌ Erreur de connexion : ${e.message}", level: 'ERROR');
       setState(() {
-        _errorMessage = e.message;
+        _error = e.message;
       });
     } finally {
       setState(() => _isLoading = false);
@@ -59,7 +68,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Créer un compte"),
+        title: const Text("Connexion"),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
@@ -76,43 +85,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: "Email",
                   labelStyle: TextStyle(color: Colors.white),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Champ requis" : null,
+                validator: (val) =>
+                    val == null || val.isEmpty ? "Champ requis" : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                obscureText: true,
                 style: const TextStyle(color: Colors.white),
+                obscureText: true,
                 decoration: const InputDecoration(
                   labelText: "Mot de passe",
                   labelStyle: TextStyle(color: Colors.white),
                 ),
-                validator: (value) => value != null && value.length >= 6
-                    ? null
-                    : "6 caractères minimum",
+                validator: (val) =>
+                    val == null || val.length < 6 ? "6 caractères min." : null,
               ),
               const SizedBox(height: 24),
-              if (_errorMessage != null)
+              if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    _errorMessage!,
+                    _error!,
                     style: const TextStyle(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
                 ),
-              if (_successMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    _successMessage!,
-                    style: const TextStyle(color: Colors.greenAccent),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
               ElevatedButton(
-                onPressed: _isLoading ? null : _register,
+                onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink,
                   foregroundColor: Colors.white,
@@ -120,7 +119,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Créer un compte"),
+                    : const Text("Se connecter"),
               ),
             ],
           ),

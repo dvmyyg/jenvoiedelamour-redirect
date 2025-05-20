@@ -2,12 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
+import 'package:share_plus/share_plus.dart';
+import '../services/i18n_service.dart';
 
-import '../utils/debug_log.dart';
-
-class AddRecipientScreen extends StatelessWidget {
+class AddRecipientScreen extends StatefulWidget {
   final String deviceId;
   final String deviceLang;
 
@@ -17,33 +16,72 @@ class AddRecipientScreen extends StatelessWidget {
     required this.deviceLang,
   });
 
-  Future<void> _createAndShareLink(BuildContext context) async {
-    final recipientId = const Uuid().v4();
+  @override
+  State<AddRecipientScreen> createState() => _AddRecipientScreenState();
+}
 
-    // 🔄 Création Firestore (placeholder)
-    await FirebaseFirestore.instance
+class _AddRecipientScreenState extends State<AddRecipientScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _displayNameController = TextEditingController();
+  final _iconController = TextEditingController();
+
+  final List<String> relationKeys = [
+    'compagne',
+    'compagnon',
+    'enfant',
+    'maman',
+    'papa',
+    'ami',
+    'autre',
+  ];
+  late String _selectedRelationKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRelationKey = relationKeys.first;
+  }
+
+  String capitalize(String input) {
+    if (input.isEmpty) return input;
+    return input[0].toUpperCase() + input.substring(1).toLowerCase();
+  }
+
+  Future<void> _saveRecipient() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final displayName = capitalize(_displayNameController.text.trim());
+    final icon = _iconController.text.trim();
+    final relation = _selectedRelationKey;
+
+    final id = const Uuid().v4();
+
+    final docRef = FirebaseFirestore.instance
         .collection('devices')
-        .doc(deviceId)
+        .doc(widget.deviceId)
         .collection('recipients')
-        .doc(recipientId)
-        .set({
-      'id': recipientId,
-      'deviceId': null, // 🟡 B complétera lors de l'appairage
-      'paired': false,
-      'createdAt': FieldValue.serverTimestamp(),
+        .doc(id);
+
+    await docRef.set({
+      'id': id,
+      'displayName': displayName,
+      'relation': relation,
+      'icon': icon,
+      'deviceId': null,
     });
 
+    if (!mounted) return;
+    _sharePairingLink(id);
+    Navigator.pop(context, true);
+  }
+
+  void _sharePairingLink(String recipientId) {
     final link =
         'https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=$recipientId';
-
-    debugLog("🔗 Lien d’invitation généré : $link");
-
-    await Share.share(
-      "💌 Clique ici pour te connecter à moi dans l’app Jela :\n\n$link",
-      subject: "Invitation à se connecter sur Jela",
+    Share.share(
+      '💌 Clique ici pour t’appairer avec moi dans l’app J’envoie de l’amour :\n$link',
+      subject: 'Lien d’appairage',
     );
-
-    if (context.mounted) Navigator.pop(context, true);
   }
 
   @override
@@ -51,33 +89,85 @@ class AddRecipientScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
+        title: const Text("➕ Nouveau destinataire"),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text("➕ Ajouter un contact"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              "Partage ce lien avec la personne que tu veux inviter.\n"
-                  "Elle devra avoir l’application installée pour accepter.",
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () => _createAndShareLink(context),
-              icon: const Icon(Icons.link),
-              label: const Text("Partager mon lien d’invitation"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(50),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              _buildTextField("Nom affiché", _displayNameController),
+              _buildRelationDropdown(),
+              _buildTextField("Icône (ex: 💖)", _iconController),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: _saveRecipient,
+                icon: const Icon(Icons.link),
+                label: const Text("Partager le lien d’appairage"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.pink,
+                  foregroundColor: Colors.white,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.pink),
+          ),
+        ),
+        validator:
+            (value) => value == null || value.isEmpty ? 'Champ requis' : null,
+      ),
+    );
+  }
+
+  Widget _buildRelationDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: _selectedRelationKey,
+        items:
+        relationKeys.map((key) {
+          return DropdownMenuItem(
+            value: key,
+            child: Text(getUILabel(key, widget.deviceLang)),
+          );
+        }).toList(),
+        onChanged:
+            (val) => setState(
+              () => _selectedRelationKey = val ?? relationKeys.first,
+        ),
+        dropdownColor: Colors.black,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          labelText: "Relation",
+          labelStyle: TextStyle(color: Colors.white),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.pink),
+          ),
         ),
       ),
     );
