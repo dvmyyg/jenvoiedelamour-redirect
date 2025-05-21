@@ -1,4 +1,4 @@
-// 📄 lib/screens/love_screen.dart
+//  lib/screens/love_screen.dart
 
 import '../utils/debug_log.dart';
 import 'dart:async';
@@ -17,7 +17,7 @@ import '../screens/profile_screen.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugLog(
-    "🔔 [FCM-BG] Notification reçue en arrière-plan : \${message.notification?.title}",
+    "🔔 [FCM-BG] Notification reçue en arrière-plan : ${message.notification?.title}",
   );
 }
 
@@ -66,7 +66,7 @@ class _LoveScreenState extends State<LoveScreen> {
         final messageType = data['messageType'] as String;
         final receivedSenderName = data['senderName'] as String?;
 
-        debugLog("🌟 Message reçu : \$messageType");
+        debugLog("🌟 Message reçu : ${messageType}");
 
         setState(() => showIcon = true);
         final localizedBody = getMessageBody(
@@ -92,7 +92,7 @@ class _LoveScreenState extends State<LoveScreen> {
         .doc(widget.deviceId)
         .get();
     senderName = doc.data()?['displayName'] as String?;
-    debugLog("💛 Nom du device (senderName) : \$senderName");
+    debugLog("💛 Nom du device (senderName) : ${senderName}");
   }
 
   Future<void> _loadRecipients() async {
@@ -101,7 +101,7 @@ class _LoveScreenState extends State<LoveScreen> {
     setState(() {
       recipients = list;
     });
-    debugLog("👥 \${recipients.length} destinataires chargés depuis Firestore");
+    debugLog("👥 ${recipients.length} destinataires chargés depuis Firestore");
   }
 
   @override
@@ -123,7 +123,7 @@ class _LoveScreenState extends State<LoveScreen> {
       SetOptions(merge: true),
     );
     debugLog(
-      "📱 isForeground=\$isForeground mis à jour pour \${widget.deviceId}",
+      "📱 isForeground=$isForeground mis à jour pour ${widget.deviceId}",
     );
   }
 
@@ -147,7 +147,7 @@ class _LoveScreenState extends State<LoveScreen> {
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       final messageType = message.data['messageType'] as String? ?? 'heart';
-      debugLog("📨 [FCM] Notification reçue (avant-plan): type=\$messageType");
+      debugLog("📨 [FCM] Notification reçue (avant-plan): type=$messageType");
 
       setState(() => showIcon = true);
       await Future.delayed(const Duration(seconds: 2));
@@ -164,16 +164,16 @@ class _LoveScreenState extends State<LoveScreen> {
         foregroundColor: Colors.white,
         title: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.favorite, color: Colors.red),
-            SizedBox(width: 8),
-            Text("J'envoie de l'amour"),
+          children: [
+            const Icon(Icons.favorite, color: Colors.red),
+            const SizedBox(width: 8),
+            Text(getUILabel('love_screen_title', widget.deviceLang)),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.group),
-            tooltip: "Gérer les destinataires",
+            tooltip: getUILabel('manage_recipients_tooltip', widget.deviceLang),
             onPressed: () async {
               await Navigator.push(
                 context,
@@ -231,7 +231,7 @@ class _LoveScreenState extends State<LoveScreen> {
                     child: GestureDetector(
                       onTap: () {
                         debugLog(
-                          "📨 Message tap sur destinataire : \${r.displayName} (\${r.id})",
+                          "📨 Message tap sur destinataire : ${r.displayName} (${r.id})",
                         );
                         Navigator.push(
                           context,
@@ -265,7 +265,7 @@ class _LoveScreenState extends State<LoveScreen> {
                               ),
                             ),
                             Text(
-                              r.relation,
+                              getUILabel(r.relation, widget.deviceLang),
                               style: const TextStyle(color: Colors.white70),
                             ),
                           ],
@@ -313,7 +313,7 @@ class _LoveScreenState extends State<LoveScreen> {
       String? receivedSenderName,
       ) async {
     final title = receivedSenderName != null
-        ? "💌 \$receivedSenderName t’a envoyé un message"
+        ? "💌 $receivedSenderName t’a envoyé un message"
         : getUILabel('message_received_title', widget.deviceLang);
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(

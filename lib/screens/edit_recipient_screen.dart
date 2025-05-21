@@ -1,4 +1,4 @@
-// 📄 lib/screens/edit_recipient_screen.dart
+//  lib/screens/edit_recipient_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -76,14 +76,14 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller) {
+  Widget _buildTextField(String labelKey, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          labelText: label,
+          labelText: getUILabel(labelKey, widget.deviceLang),
           labelStyle: const TextStyle(color: Colors.white),
           enabledBorder: const OutlineInputBorder(
             borderSide: BorderSide(color: Colors.white24),
@@ -92,8 +92,8 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
             borderSide: BorderSide(color: Colors.pink),
           ),
         ),
-        validator:
-            (value) => value == null || value.isEmpty ? 'Champ requis' : null,
+        validator: (value) =>
+        value == null || value.isEmpty ? getUILabel('required_field', widget.deviceLang) : null,
       ),
     );
   }
@@ -103,13 +103,12 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
         value: _selectedRelationKey,
-        items:
-            relationKeys.map((key) {
-              return DropdownMenuItem(
-                value: key,
-                child: Text(getUILabel(key, widget.deviceLang)),
-              );
-            }).toList(),
+        items: relationKeys.map((key) {
+          return DropdownMenuItem(
+            value: key,
+            child: Text(getUILabel(key, widget.deviceLang)),
+          );
+        }).toList(),
         onChanged: (val) {
           if (val != null) {
             setState(() => _selectedRelationKey = val);
@@ -117,13 +116,13 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
         },
         dropdownColor: Colors.black,
         style: const TextStyle(color: Colors.white),
-        decoration: const InputDecoration(
-          labelText: "Relation",
-          labelStyle: TextStyle(color: Colors.white),
-          enabledBorder: OutlineInputBorder(
+        decoration: InputDecoration(
+          labelText: getUILabel('relation_label', widget.deviceLang),
+          labelStyle: const TextStyle(color: Colors.white),
+          enabledBorder: const OutlineInputBorder(
             borderSide: BorderSide(color: Colors.white24),
           ),
-          focusedBorder: OutlineInputBorder(
+          focusedBorder: const OutlineInputBorder(
             borderSide: BorderSide(color: Colors.pink),
           ),
         ),
@@ -136,7 +135,7 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("✏️ Modifier le destinataire"),
+        title: Text(getUILabel('edit_recipient_title', widget.deviceLang)),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
@@ -146,14 +145,14 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              _buildTextField("Nom affiché", _displayNameController),
+              _buildTextField('display_name_label', _displayNameController),
               _buildRelationDropdown(),
-              _buildTextField("Icône (ex: 💖)", _iconController),
+              _buildTextField('icon_hint', _iconController),
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: _saveChanges,
                 icon: const Icon(Icons.check),
-                label: const Text("Enregistrer les modifications"),
+                label: Text(getUILabel('save_changes_button', widget.deviceLang)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink,
                   foregroundColor: Colors.white,
@@ -163,7 +162,7 @@ class _EditRecipientScreenState extends State<EditRecipientScreen> {
               ElevatedButton.icon(
                 onPressed: _sharePairingLink,
                 icon: const Icon(Icons.link),
-                label: const Text("Partager le lien d’appairage"),
+                label: Text(getUILabel('share_pairing_link', widget.deviceLang)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey,
                   foregroundColor: Colors.white,

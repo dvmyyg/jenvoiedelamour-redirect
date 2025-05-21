@@ -1,10 +1,11 @@
-// 📄 lib/screens/recipient_details_screen.dart
+// lib/screens/recipient_details_screen.dart
 
 import 'package:flutter/material.dart';
 import '../models/recipient.dart';
 import '../services/recipient_service.dart';
 import '../utils/debug_log.dart';
 import '../screens/send_message_screen.dart';
+import '../services/i18n_service.dart';
 
 class RecipientDetailsScreen extends StatelessWidget {
   final String deviceId;
@@ -18,20 +19,30 @@ class RecipientDetailsScreen extends StatelessWidget {
     required this.recipient,
   });
 
+  // modifié le 21/05/2025 — ajout des libellés dynamiques avec getUILabel
   void _confirmDelete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: const Text("Supprimer ce contact", style: TextStyle(color: Colors.white)),
-        content: const Text("Cette action est irréversible. Supprimer ce contact ?", style: TextStyle(color: Colors.white70)),
+        title: Text(
+          getUILabel('delete_contact_title', deviceLang),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          getUILabel('delete_contact_warning', deviceLang),
+          style: const TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
-            child: const Text("Annuler"),
+            child: Text(getUILabel('cancel_button', deviceLang)),
             onPressed: () => Navigator.of(context).pop(false),
           ),
           TextButton(
-            child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+            child: Text(
+              getUILabel('delete_button', deviceLang),
+              style: const TextStyle(color: Colors.red),
+            ),
             onPressed: () => Navigator.of(context).pop(true),
           ),
         ],
@@ -61,11 +72,10 @@ class RecipientDetailsScreen extends StatelessWidget {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
-                child: Text("Supprimer ce contact"),
+                child: Text(getUILabel('delete_contact_title', deviceLang)),
               ),
-              // Autres actions futures ici
             ],
           ),
         ],
@@ -89,7 +99,7 @@ class RecipientDetailsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              recipient.relation,
+              getUILabel(recipient.relation, deviceLang),
               style: const TextStyle(color: Colors.white70, fontSize: 16),
             ),
             const Spacer(),
@@ -107,7 +117,7 @@ class RecipientDetailsScreen extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.favorite),
-              label: const Text("Accéder aux messages"),
+              label: Text(getUILabel('access_messages_button', deviceLang)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.pink,
                 foregroundColor: Colors.white,

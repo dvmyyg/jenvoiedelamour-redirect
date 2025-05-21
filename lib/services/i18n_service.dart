@@ -1,18 +1,12 @@
-// 📄 lib/services/i18n_service.dart
+//  lib/services/i18n_service.dart
 
 String getUILabel(String key, String langCode) {
   const labels = {
     'send': {
-      'fr': 'Envoyer',
-      'de': 'Schicken',
-      'es': 'Enviar',
-      'en': 'Send',
+      'fr': 'Envoyer', 'de': 'Schicken', 'es': 'Enviar', 'en': 'Send',
     },
     'message_received_title': {
-      'fr': '💌 Message reçu',
-      'de': '💌 Nachricht empfangen',
-      'es': '💌 Mensaje recibido',
-      'en': '💌 Message received',
+      'fr': '💌 Message reçu', 'de': '💌 Nachricht empfangen', 'es': '💌 Mensaje recibido', 'en': '💌 Message received',
     },
     'compagne': {
       'fr': 'Compagne', 'de': 'Partnerin', 'es': 'Compañera', 'en': 'Girlfriend'
@@ -82,6 +76,96 @@ String getUILabel(String key, String langCode) {
     },
     'logout_button': {
       'fr': 'Déconnexion', 'de': 'Abmelden', 'es': 'Cerrar sesión', 'en': 'Logout',
+    },
+    'email_verification_title': {
+      'fr': 'Vérification de l’email', 'de': 'E-Mail-Bestätigung', 'es': 'Verificación de correo', 'en': 'Email verification'
+    },
+    'email_verification_message': {
+      'fr': 'Avant d’utiliser l’application, veuillez confirmer votre adresse email.', 'de': 'Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie die App verwenden.', 'es': 'Confirma tu dirección de correo antes de usar la app.', 'en': 'Before using the app, please confirm your email address.'
+    },
+    'email_verification_check_button': {
+      'fr': 'Vérifier maintenant', 'de': 'Jetzt überprüfen', 'es': 'Verificar ahora', 'en': 'Verify now'
+    },
+    'email_verification_resend_button': {
+      'fr': 'Renvoyer l’email', 'de': 'E-Mail erneut senden', 'es': 'Reenviar correo', 'en': 'Resend email'
+    },
+    'email_not_verified': {
+      'fr': 'Votre email n’est pas encore vérifié.', 'de': 'Ihre E-Mail ist noch nicht bestätigt.', 'es': 'Tu correo aún no está verificado.', 'en': 'Your email is not yet verified.'
+    },
+    'email_resent_success': {
+      'fr': 'Email de vérification renvoyé ✅', 'de': 'Bestätigungs-E-Mail erneut gesendet ✅', 'es': 'Correo de verificación reenviado ✅', 'en': 'Verification email resent ✅'
+    },
+    'email_resent_error': {
+      'fr': 'Erreur lors de l’envoi de l’email', 'de': 'Fehler beim Senden der E-Mail', 'es': 'Error al enviar el correo', 'en': 'Error sending email'
+    },
+    'love_screen_title': {
+      'fr': "J'envoie de l'amour", 'de': "Ich sende Liebe", 'es': "Envío amor", 'en': "Sending love",
+    },
+    'manage_recipients_tooltip': {
+      'fr': "Gérer les destinataires", 'de': "Empfänger verwalten", 'es': "Gestionar destinatarios", 'en': "Manage recipients",
+    },
+    'message_sent': {
+      'fr': "Message envoyé ✅", 'de': "Nachricht gesendet ✅", 'es': "Mensaje enviado ✅", 'en': "Message sent ✅",
+    },
+    'message_send_error': {
+      'fr': "Échec de l'envoi", 'de': "Senden fehlgeschlagen", 'es': "Error al enviar", 'en': "Send failed",
+    },
+    'pairing_link_subject': {
+      'fr': 'Lien d\'appairage', 'de': 'Kopplungslink', 'es': 'Enlace de emparejamiento', 'en': 'Pairing link',
+    },
+    'pairing_link_message': {
+      'fr': "💌 Clique ici pour t'appairer avec moi dans l'app J'envoie de l'amour :", 'de': "💌 Klicke hier, um dich mit mir zu koppeln in der App \"Ich sende Liebe\":", 'es': "💌 Haz clic aquí para emparejarte conmigo en la app \"Envío amor\":", 'en': "💌 Click here to pair with me in the app \"Sending love\":",
+    },
+    'required_field': {
+      'fr': 'Champ requis', 'de': 'Pflichtfeld', 'es': 'Campo requerido', 'en': 'Required field',
+    },
+    'display_name_label': {
+      'fr': 'Nom affiché', 'de': 'Anzeigename', 'es': 'Nombre mostrado', 'en': 'Display name',
+    },
+    'icon_hint': {
+      'fr': 'Icône (ex: 💖)', 'de': 'Symbol (z. B.: 💖)', 'es': 'Icono (ej: 💖)', 'en': 'Icon (e.g.: 💖)',
+    },
+    'share_pairing_link': {
+      'fr': 'Partager le lien d’appairage', 'de': 'Kopplungslink teilen', 'es': 'Compartir el enlace de emparejamiento', 'en': 'Share pairing link',
+    },
+    'relation_label': {
+      'fr': 'Relation', 'de': 'Beziehung', 'es': 'Relación', 'en': 'Relation',
+    },
+    'add_recipient_title': {
+      'fr': '➕ Nouveau destinataire', 'de': '➕ Neuer Empfänger', 'es': '➕ Nuevo destinatario', 'en': '➕ New recipient',
+    },
+    'delete_contact_title': {
+      'fr': 'Supprimer ce contact', 'de': 'Diesen Kontakt löschen', 'es': 'Eliminar este contacto', 'en': 'Delete this contact',
+    },
+    'delete_contact_warning': {
+      'fr': 'Cette action est irréversible. Supprimer ce contact ?', 'de': 'Diese Aktion ist unwiderruflich. Kontakt löschen?', 'es': 'Esta acción no se puede deshacer. ¿Eliminar este contacto?', 'en': 'This action is irreversible. Delete this contact?',
+    },
+    'cancel_button': {
+      'fr': 'Annuler', 'de': 'Abbrechen', 'es': 'Cancelar', 'en': 'Cancel',
+    },
+    'delete_button': {
+      'fr': 'Supprimer', 'de': 'Löschen', 'es': 'Eliminar', 'en': 'Delete',
+    },
+    'access_messages_button': {
+      'fr': 'Accéder aux messages', 'de': 'Nachrichten öffnen', 'es': 'Acceder a los mensajes', 'en': 'Access messages',
+    },
+    'recipients_title': {
+      'fr': 'Destinataires', 'de': 'Empfänger', 'es': 'Destinatarios', 'en': 'Recipients',
+    },
+    'invite_someone_button': {
+      'fr': 'Inviter quelqu’un', 'de': 'Jemanden einladen', 'es': 'Invitar a alguien', 'en': 'Invite someone',
+    },
+    'edit_recipient_title': {
+      'fr': '✏️ Modifier le destinataire',
+      'de': '✏️ Empfänger bearbeiten',
+      'es': '✏️ Editar destinatario',
+      'en': '✏️ Edit recipient',
+    },
+    'save_changes_button': {
+      'fr': 'Enregistrer les modifications',
+      'de': 'Änderungen speichern',
+      'es': 'Guardar cambios',
+      'en': 'Save changes',
     },
   };
 

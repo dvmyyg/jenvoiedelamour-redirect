@@ -1,10 +1,11 @@
-// 📄 lib/screens/recipients_screen.dart
+//  lib/screens/recipients_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/recipient_service.dart';
 import '../models/recipient.dart';
 import 'recipient_details_screen.dart';
+import '../services/i18n_service.dart'; // ajouté le 21/05/2025 — pour traductions dynamiques
 
 class RecipientsScreen extends StatefulWidget {
   final String deviceId;
@@ -41,16 +42,28 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: const Text("Supprimer ce contact ?", style: TextStyle(color: Colors.white)),
-        content: const Text("Cette action est irréversible.", style: TextStyle(color: Colors.white70)),
+        title: Text(
+          getUILabel('delete_contact_title', widget.deviceLang),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          getUILabel('delete_contact_warning', widget.deviceLang),
+          style: const TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Annuler", style: TextStyle(color: Colors.grey)),
+            child: Text(
+              getUILabel('cancel_button', widget.deviceLang),
+              style: const TextStyle(color: Colors.grey),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+            child: Text(
+              getUILabel('delete_button', widget.deviceLang),
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -63,7 +76,8 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
   }
 
   void _shareInviteLink() {
-    final inviteLink = "https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${widget.deviceId}";
+    final inviteLink =
+        "https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${widget.deviceId}";
     Share.share(inviteLink);
   }
 
@@ -71,7 +85,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Destinataires"),
+        title: Text(getUILabel('recipients_title', widget.deviceLang)),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
@@ -83,16 +97,16 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     radius: 16,
                     backgroundColor: Colors.pink,
                     child: Icon(Icons.add, size: 20, color: Colors.white),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Text(
-                    "Inviter quelqu’un",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    getUILabel('invite_someone_button', widget.deviceLang),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -107,7 +121,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               subtitle: Text(
-                r.relation,
+                getUILabel(r.relation, widget.deviceLang),
                 style: TextStyle(color: Colors.grey[400]),
               ),
               trailing: IconButton(

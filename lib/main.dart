@@ -13,6 +13,7 @@ import 'services/device_service.dart';
 import 'firebase_options.dart';
 import 'utils/debug_log.dart';
 import 'screens/login_screen.dart';
+import 'screens/email_verification_screen.dart'; // ajouté le 21/05/2025 — pour rediriger si email non vérifié
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (Firebase.apps.isEmpty) {
@@ -134,16 +135,29 @@ class _MyAppState extends State<MyApp> {
           }
 
           final user = snapshot.data;
+
           if (user != null) {
+            if (!user.emailVerified) {
+              debugLog("🔒 Email non vérifié — accès restreint", level: 'WARNING');
+              return EmailVerificationScreen(
+                deviceId: widget.deviceId,
+                deviceLang: widget.deviceLang,
+              );
+            }
+
             if (_showPairSuccess) {
               return PairSuccessScreen(recipientId: widget.initialPairSuccessRecipientId!);
             }
+
             return HomeSelector(
               deviceId: widget.deviceId,
               deviceLang: widget.deviceLang,
             );
           } else {
-            return LoginScreen(deviceLang: widget.deviceLang);
+            return LoginScreen(
+              deviceLang: widget.deviceLang,
+              deviceId: widget.deviceId, // ajouté le 21/05/2025 — requis par LoginScreen
+            );
           }
         },
       ),

@@ -1,4 +1,4 @@
-// 📄 lib/screens/home_selector.dart
+//  lib/screens/home_selector.dart
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

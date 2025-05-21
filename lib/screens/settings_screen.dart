@@ -1,7 +1,8 @@
-// 📄 lib/screens/settings_screen.dart
+//  lib/screens/settings_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/i18n_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String currentLang;
@@ -26,11 +27,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadDisplayName() async {
-    final doc =
-        await FirebaseFirestore.instance
-            .collection('devices')
-            .doc(widget.deviceId)
-            .get();
+    final doc = await FirebaseFirestore.instance
+        .collection('devices')
+        .doc(widget.deviceId)
+        .get();
     final name = doc.data()?['displayName'];
     if (name != null) {
       _nameController.text = name;
@@ -51,10 +51,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .doc(widget.deviceId)
           .update({'displayName': name});
 
-      if (!mounted) return; // ✅ protection ajoutée
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("✅ Nom enregistré")));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(getUILabel('name_saved_snackbar', widget.currentLang)),
+        ),
+      );
     }
   }
 
@@ -65,11 +67,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.settings, color: Colors.white),
-            SizedBox(width: 8),
-            Text("Réglages"),
+            const Icon(Icons.settings, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(getUILabel('settings_title', widget.currentLang)),
           ],
         ),
       ),
@@ -78,20 +80,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "👤 Nom affiché dans les messages",
-              style: TextStyle(color: Colors.white, fontSize: 16),
+            Text(
+              getUILabel('settings_display_name_label', widget.currentLang),
+              style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                hintText: 'Ex : Bini',
-                hintStyle: TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(
+              decoration: InputDecoration(
+                hintText: getUILabel('settings_display_name_hint', widget.currentLang),
+                hintStyle: const TextStyle(color: Colors.grey),
+                enabledBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey),
                 ),
-                focusedBorder: OutlineInputBorder(
+                focusedBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.white),
                 ),
               ),
@@ -100,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: _saveDisplayName,
-              child: const Text("Enregistrer le nom"),
+              child: Text(getUILabel('save_display_name_button', widget.currentLang)),
             ),
           ],
         ),

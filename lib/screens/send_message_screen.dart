@@ -1,4 +1,4 @@
-// 📄 lib/screens/send_message_screen.dart
+//  lib/screens/send_message_screen.dart
 
 import '../utils/debug_log.dart';
 import 'package:flutter/material.dart';
@@ -74,8 +74,9 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
       return;
     }
 
+    // corrigé le 21/05/2025 — suppression des antislashs inutiles dans les logs
     debugLog(
-      "📤 Envoi de message de type '\$type' vers deviceId=\$otherDeviceId",
+      "📤 Envoi de message de type '$type' vers deviceId=$otherDeviceId",
       level: 'INFO',
     );
 
@@ -86,12 +87,12 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
           .collection('devices')
           .doc(otherDeviceId)
           .update({
-            'messageType': type,
-            'senderName': widget.recipient.displayName,
-          });
+        'messageType': type,
+        'senderName': widget.recipient.displayName,
+      });
 
       debugLog(
-        "✅ Message envoyé à \$otherDeviceId : type=\$type",
+        "✅ Message envoyé à $otherDeviceId : type=$type",
         level: 'SUCCESS',
       );
 
@@ -102,11 +103,13 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
 
       Navigator.pop(context);
     } catch (e) {
-      debugLog("❌ Erreur lors de l'envoi de message : \$e", level: 'ERROR');
+      debugLog("❌ Erreur lors de l'envoi de message : $e", level: 'ERROR');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("❌ Échec de l'envoi : \$e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("❌ ${getUILabel('send_failed', widget.deviceLang)} : $e"),
+          ),
+        );
       }
     }
   }

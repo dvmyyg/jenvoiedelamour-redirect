@@ -1,14 +1,20 @@
-// 📄 lib/screens/login_screen.dart
+//  lib/screens/login_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'register_screen.dart';
 import '../utils/debug_log.dart';
+import '../services/i18n_service.dart'; // ajouté le 21/05/2025 — pour accès aux traductions UI
 
 class LoginScreen extends StatefulWidget {
   final String deviceLang;
+  final String deviceId; // ajouté le 21/05/2025 — requis pour register_screen.dart
 
-  const LoginScreen({super.key, required this.deviceLang});
+  const LoginScreen({
+    super.key,
+    required this.deviceLang,
+    required this.deviceId,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -27,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       debugLog("❌ Login failed: $e", level: 'ERROR');
-      setState(() => _error = "Email ou mot de passe incorrect");
+      setState(() => _error = getUILabel('login_error', widget.deviceLang));
     }
   }
 
@@ -40,19 +46,26 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Connexion", style: TextStyle(fontSize: 24)),
+            Text(
+              getUILabel('login_title', widget.deviceLang),
+              style: const TextStyle(fontSize: 24),
+            ),
             const SizedBox(height: 32),
             TextField(
               controller: _emailController,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: InputDecoration(
+                labelText: getUILabel('email_label', widget.deviceLang),
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
               obscureText: true,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: 'Mot de passe'),
+              decoration: InputDecoration(
+                labelText: getUILabel('password_label', widget.deviceLang),
+              ),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -61,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 backgroundColor: Colors.pink,
                 foregroundColor: Colors.white,
               ),
-              child: const Text("Se connecter"),
+              child: Text(getUILabel('login_button', widget.deviceLang)),
             ),
             const SizedBox(height: 16),
             TextButton(
@@ -69,12 +82,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        RegisterScreen(deviceLang: widget.deviceLang),
+                    builder: (_) => RegisterScreen(
+                      deviceLang: widget.deviceLang,
+                      deviceId: widget.deviceId,
+                    ),
                   ),
                 );
               },
-              child: const Text("Créer un compte"),
+              child: Text(getUILabel('create_account_button', widget.deviceLang)),
             ),
             if (_error != null)
               Padding(

@@ -1,10 +1,11 @@
-// 📄 lib/screens/profile_screen.dart
+//  lib/screens/profile_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/debug_log.dart';
 import '../services/i18n_service.dart';
+import '../services/firestore_service.dart'; // ajouté le 21/05/2025 pour gérer users/{uid}
 
 class ProfileScreen extends StatefulWidget {
   final String deviceId;
@@ -34,17 +35,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfile();
   }
 
+  // modifié le 21/05/2025 pour tenter d’abord de charger depuis users/{uid}, sinon fallback sur devices
   Future<void> _loadProfile() async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('devices')
-          .doc(widget.deviceId)
-          .get();
+      final user = FirebaseAuth.instance.currentUser;
+      String displayName = '';
 
-      final displayName = doc.data()?['displayName'] ?? '';
+      if (user != null) {
+        final userData = await getUserProfile(user.uid);
+        displayName = userData?['firstName'] ?? '';
+      }
+
+      if (displayName.isEmpty) {
+        final doc = await FirebaseFirestore.instance
+            .collection('devices')
+            .doc(widget.deviceId)
+            .get();
+
+        displayName = doc.data()?['displayName'] ?? '';
+      }
+
       _displayNameController.text = displayName;
 
-      final user = FirebaseAuth.instance.currentUser;
       setState(() {
         _email = user?.email ?? '(email inconnu)';
         _isLoading = false;
@@ -60,6 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // modifié le 21/05/2025 pour enregistrer aussi dans users/{uid}
   Future<void> _saveProfile() async {
     final newName = _displayNameController.text.trim();
     if (newName.isEmpty) return;
@@ -69,6 +82,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .collection('devices')
           .doc(widget.deviceId)
           .update({'displayName': newName});
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await saveUserProfile(
+          uid: user.uid,
+          email: user.email ?? '',
+          firstName: newName,
+        );
+      }
 
       setState(() {
         _successMessage = getUILabel('profile_saved', widget.deviceLang);

@@ -1,12 +1,20 @@
-// 📄 lib/screens/register_screen.dart
+//  lib/screens/register_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/debug_log.dart';
+import 'email_verification_screen.dart'; // ajouté le 21/05/2025 pour rediriger si email non vérifié
+import '../services/i18n_service.dart'; // ajouté le 21/05/2025 — accès aux traductions dynamiques
 
 class RegisterScreen extends StatefulWidget {
   final String deviceLang;
-  const RegisterScreen({super.key, required this.deviceLang});
+  final String deviceId; // ajouté le 21/05/2025 car nécessaire à la suite du parcours
+
+  const RegisterScreen({
+    super.key,
+    required this.deviceLang,
+    required this.deviceId,
+  });
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -20,6 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _errorMessage;
   String? _successMessage;
 
+  // modifié le 21/05/2025 — redirige vers EmailVerificationScreen si l’email n’est pas validé
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -37,13 +46,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
           .createUserWithEmailAndPassword(email: email, password: password);
 
       final user = credential.user;
+
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
-        _successMessage =
-            "Un email de vérification a été envoyé à $email. Veuillez vérifier votre boîte mail.";
+        debugLog("📩 Email de vérification envoyé à $email");
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationScreen(
+              deviceId: widget.deviceId,
+              deviceLang: widget.deviceLang,
+            ),
+          ),
+        );
+        return;
       }
 
-      debugLog("✅ Utilisateur enregistré : $email");
+      // normalement inatteignable ici, sauf si le mail a déjà été vérifié manuellement
+      debugLog("✅ Utilisateur inscrit et email déjà vérifié (rare) : $email");
+      _successMessage = getUILabel('email_verified_info', widget.deviceLang);
     } on FirebaseAuthException catch (e) {
       debugLog("❌ Erreur d'enregistrement : ${e.message}", level: 'ERROR');
       setState(() {
@@ -59,7 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Créer un compte"),
+        title: Text(getUILabel('register_title', widget.deviceLang)),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
@@ -72,25 +95,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _emailController,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  labelStyle: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: getUILabel('email_label', widget.deviceLang),
+                  labelStyle: const TextStyle(color: Colors.white),
                 ),
                 validator: (value) =>
-                    value == null || value.isEmpty ? "Champ requis" : null,
+                value == null || value.isEmpty ? getUILabel('required_field', widget.deviceLang) : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: "Mot de passe",
-                  labelStyle: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: getUILabel('password_label', widget.deviceLang),
+                  labelStyle: const TextStyle(color: Colors.white),
                 ),
                 validator: (value) => value != null && value.length >= 6
                     ? null
-                    : "6 caractères minimum",
+                    : getUILabel('password_min_length', widget.deviceLang),
               ),
               const SizedBox(height: 24),
               if (_errorMessage != null)
@@ -120,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Créer un compte"),
+                    : Text(getUILabel('create_account_button', widget.deviceLang)),
               ),
             ],
           ),
