@@ -1,3 +1,5 @@
+<!-- web/jenvoiedelamour-redirect/index.html -->
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -24,6 +26,8 @@
       font-weight: bold;
       border-radius: 8px;
       text-decoration: none;
+      display: inline-block;
+      margin: 12px 0;
     }
   </style>
 </head>
@@ -37,25 +41,29 @@
         connecting: "Connexion en cours avec l'application...",
         missing: "❌ Lien invalide : paramètre 'recipient' manquant.",
         not_installed: "L'application n'est pas installée.",
-        download: "Télécharger l'application"
+        download: "Télécharger l'application",
+        open_app: "Ouvrir l'application"
       },
       en: {
         connecting: "Connecting with the app...",
         missing: "❌ Invalid link: 'recipient' parameter missing.",
         not_installed: "The app is not installed.",
-        download: "Download the app"
+        download: "Download the app",
+        open_app: "Open the app"
       },
       de: {
         connecting: "Verbindung mit der App wird hergestellt...",
         missing: "❌ Ungültiger Link: 'recipient'-Parameter fehlt.",
         not_installed: "Die App ist nicht installiert.",
-        download: "App herunterladen"
+        download: "App herunterladen",
+        open_app: "App öffnen"
       },
       es: {
         connecting: "Conectando con la app...",
         missing: "❌ Enlace inválido: falta el parámetro 'recipient'.",
         not_installed: "La aplicación no está instalada.",
-        download: "Descargar la aplicación"
+        download: "Descargar la aplicación",
+        open_app: "Abrir la app"
       },
     };
 
@@ -66,22 +74,19 @@
     const recipient = urlParams.get("recipient");
 
     const messageEl = document.getElementById("message");
-    messageEl.innerText = tLang.connecting;
 
     if (!recipient) {
       messageEl.innerHTML = `<span class='error'>${tLang.missing}</span>`;
     } else {
-      // Tentative d'ouverture via l'app avec fallback immédiat intégré
-      const fallbackUrl = encodeURIComponent("https://dvmyyg.github.io/jenvoiedelamour-redirect/apk/app-release.apk");
-      window.location.href = `intent://jela.app/open?recipient=${recipient}#Intent;scheme=https;package=com.jela.app;S.browser_fallback_url=${fallbackUrl};end`;
-
-      // En bonus : affichage manuel du lien au cas où tout échoue (optionnel mais utile)
-      setTimeout(() => {
-        messageEl.innerHTML = `
-          <p>${tLang.not_installed}</p>
-          <p><a class='apk-link' href='https://dvmyyg.github.io/jenvoiedelamour-redirect/apk/app-release.apk' download>${tLang.download}</a></p>
-        `;
-      }, 2000);
+      messageEl.innerHTML = `
+        <p>${tLang.connecting}</p>
+        <p><a class='apk-link' href='https://dvmyyg.github.io/jenvoiedelamour-redirect/apk/app-release.apk' download>
+          ${tLang.download}
+        </a></p>
+        <p><a class='apk-link' href='intent://jela.app/open?recipient=${recipient}#Intent;scheme=https;package=fr.jela.app;S.browser_fallback_url=https://dvmyyg.github.io/jenvoiedelamour-redirect/apk/app-release.apk;end'>
+          ${tLang.open_app}
+        </a></p>
+      `;
     }
   </script>
 </body>
