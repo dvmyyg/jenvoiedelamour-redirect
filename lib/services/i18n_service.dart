@@ -155,6 +155,39 @@ String getUILabel(String key, String langCode) {
     'invite_someone_button': {
       'fr': 'Inviter quelqu’un', 'de': 'Jemanden einladen', 'es': 'Invitar a alguien', 'en': 'Invite someone',
     },
+    'back_home_button': {
+      'fr': 'Accueil', 'de': 'Startseite', 'es': 'Inicio', 'en': 'Home',
+    },
+    'register_title': {
+      'fr': 'Inscription',
+      'de': 'Registrierung',
+      'es': 'Registro',
+      'en': 'Register',
+    },
+    'register_button': {
+      'fr': 'Créer mon compte',
+      'de': 'Konto erstellen',
+      'es': 'Crear cuenta',
+      'en': 'Register',
+    },
+    'invalid_email': {
+      'fr': 'Email invalide',
+      'de': 'Ungültige E-Mail',
+      'es': 'Correo inválido',
+      'en': 'Invalid email',
+    },
+    'password_min_length': {
+      'fr': 'Minimum 6 caractères',
+      'de': 'Mindestens 6 Zeichen',
+      'es': 'Mínimo 6 caracteres',
+      'en': 'Minimum 6 characters',
+    },
+    'login_error': {
+      'fr': 'Email ou mot de passe incorrect',
+      'de': 'E-Mail oder Passwort falsch',
+      'es': 'Correo o contraseña incorrectos',
+      'en': 'Wrong email or password',
+    },
     'edit_recipient_title': {
       'fr': '✏️ Modifier le destinataire',
       'de': '✏️ Empfänger bearbeiten',
@@ -166,6 +199,36 @@ String getUILabel(String key, String langCode) {
       'de': 'Änderungen speichern',
       'es': 'Guardar cambios',
       'en': 'Save changes',
+    },
+    'login_title': {
+      'fr': 'Connexion',
+      'de': 'Anmeldung',
+      'es': 'Iniciar sesión',
+      'en': 'Login',
+    },
+    'email_label': {
+      'fr': 'Email',
+      'de': 'E-Mail',
+      'es': 'Correo electrónico',
+      'en': 'Email',
+    },
+    'password_label': {
+      'fr': 'Mot de passe',
+      'de': 'Passwort',
+      'es': 'Contraseña',
+      'en': 'Password',
+    },
+    'login_button': {
+      'fr': 'Se connecter',
+      'de': 'Einloggen',
+      'es': 'Entrar',
+      'en': 'Login',
+    },
+    'create_account_button': {
+      'fr': 'Créer un compte',
+      'de': 'Konto erstellen',
+      'es': 'Crear una cuenta',
+      'en': 'Create account',
     },
   };
 

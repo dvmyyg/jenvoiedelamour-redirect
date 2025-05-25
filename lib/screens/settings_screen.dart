@@ -2,7 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // ajouté le 25/05/2025 — pour get uid/email
 import '../services/i18n_service.dart';
+import '../services/firestore_service.dart'; // ajouté le 25/05/2025 — pour saveUserProfile
 
 class SettingsScreen extends StatefulWidget {
   final String currentLang;
@@ -44,20 +46,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveDisplayName() async {
     final rawName = _nameController.text.trim();
-    if (rawName.isNotEmpty) {
-      final name = capitalize(rawName);
-      await FirebaseFirestore.instance
-          .collection('devices')
-          .doc(widget.deviceId)
-          .update({'displayName': name});
+    if (rawName.isEmpty) return;
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(getUILabel('name_saved_snackbar', widget.currentLang)),
-        ),
+    final name = capitalize(rawName);
+
+    // 🔁 Mise à jour devices/{deviceId}
+    await FirebaseFirestore.instance
+        .collection('devices')
+        .doc(widget.deviceId)
+        .update({'displayName': name});
+
+    // 🧠 Mise à jour users/{uid}
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await saveUserProfile(
+        uid: user.uid,
+        email: user.email ?? '',
+        firstName: name,
       );
     }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(getUILabel('profile_saved', widget.currentLang)),
+      ),
+    );
   }
 
   @override
@@ -71,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             const Icon(Icons.settings, color: Colors.white),
             const SizedBox(width: 8),
-            Text(getUILabel('settings_title', widget.currentLang)),
+            Text(getUILabel('profile_title', widget.currentLang)),
           ],
         ),
       ),
@@ -81,14 +95,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              getUILabel('settings_display_name_label', widget.currentLang),
+              getUILabel('profile_firstname_label', widget.currentLang),
               style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
-                hintText: getUILabel('settings_display_name_hint', widget.currentLang),
+                hintText: getUILabel('profile_firstname_hint', widget.currentLang),
                 hintStyle: const TextStyle(color: Colors.grey),
                 enabledBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey),
@@ -102,7 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: _saveDisplayName,
-              child: Text(getUILabel('save_display_name_button', widget.currentLang)),
+              child: Text(getUILabel('profile_save_button', widget.currentLang)),
             ),
           ],
         ),

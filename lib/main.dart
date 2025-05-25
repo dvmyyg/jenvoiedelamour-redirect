@@ -5,15 +5,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:app_links/app_links.dart'; // ajouté le 24/05/2025 — remplacement de uni_links
 import 'dart:ui';
 import 'dart:async';
+
 import 'screens/home_selector.dart';
 import 'services/firestore_service.dart';
 import 'services/device_service.dart';
 import 'firebase_options.dart';
 import 'utils/debug_log.dart';
 import 'screens/login_screen.dart';
-import 'screens/email_verification_screen.dart'; // ajouté le 21/05/2025 — pour rediriger si email non vérifié
+import 'screens/email_verification_screen.dart'; // ajouté le 21/05/2025 — rediriger si email non vérifié
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (Firebase.apps.isEmpty) {
@@ -22,34 +24,47 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugLog("🖙 Message reçu en arrière-plan : ${message.messageId}", level: 'INFO');
 }
 
-Future<String?> _handleManualLink(String deviceId) async {
-  final Uri? deepLink = Uri.tryParse(PlatformDispatcher.instance.defaultRouteName);
-  debugLog("🔗 Lien potentiel via route par défaut : $deepLink", level: 'INFO');
+// ajouté le 24/05/2025 — capture les liens d'appairage intent://recipient=... via app_links
+Future<String?> handleAppLinks(String deviceId) async {
+  final AppLinks appLinks = AppLinks();
 
-  if (deepLink != null && deepLink.queryParameters.containsKey('recipient')) {
-    final recipientId = deepLink.queryParameters['recipient'];
-    debugLog("📨 Paramètre recipient détecté : $recipientId", level: 'INFO');
-
-    if (recipientId != null && recipientId.isNotEmpty) {
-      try {
-        final docRef = FirebaseFirestore.instance
-            .collection('devices')
-            .doc(recipientId)
-            .collection('recipients')
-            .doc(deviceId);
-
-        await docRef.set({'deviceId': deviceId}, SetOptions(merge: true));
-        debugLog("✅ Appairage terminé : $recipientId a reçu l'invité $deviceId", level: 'SUCCESS');
-        return recipientId;
-      } catch (e) {
-        debugLog("❌ Erreur lors de l'appairage Firebase : $e", level: 'ERROR');
-        return null;
-      }
-    }
-  } else {
-    debugLog("⚠️ Aucun paramètre recipient trouvé dans l'URL", level: 'WARNING');
+  // lien de démarrage
+  final Uri? initialUri = await appLinks.getInitialAppLink();
+  if (initialUri != null && initialUri.queryParameters.containsKey('recipient')) {
+    final recipientId = initialUri.queryParameters['recipient'];
+    debugLog("📨 AppLink (initial) → recipient=$recipientId", level: 'INFO');
+    await _pairWith(recipientId, deviceId);
+    return recipientId;
   }
+
+  // 🔁 écoute des liens à chaud
+  appLinks.uriLinkStream.listen((Uri? uri) async {
+    if (uri != null && uri.queryParameters.containsKey('recipient')) {
+      final recipientId = uri.queryParameters['recipient'];
+      debugLog("📨 AppLink (stream) → recipient=$recipientId", level: 'INFO');
+      await _pairWith(recipientId, deviceId);
+    }
+  });
+
   return null;
+}
+
+Future<String?> _pairWith(String? recipientId, String deviceId) async {
+  if (recipientId == null || recipientId.isEmpty) return null;
+  try {
+    final docRef = FirebaseFirestore.instance
+        .collection('devices')
+        .doc(recipientId)
+        .collection('recipients')
+        .doc(deviceId);
+
+    await docRef.set({'deviceId': deviceId}, SetOptions(merge: true));
+    debugLog("✅ Appairage réussi : $recipientId ↔ $deviceId", level: 'SUCCESS');
+    return recipientId;
+  } catch (e) {
+    debugLog("❌ Erreur d’appairage Firestore : $e", level: 'ERROR');
+    return null;
+  }
 }
 
 const bool isReceiver = true;
@@ -74,7 +89,7 @@ Future<void> main() async {
   final token = await FirebaseMessaging.instance.getToken();
   debugLog("🪪 FCM Token: $token", level: 'INFO');
 
-  final String? pairedRecipientId = await _handleManualLink(deviceId);
+  final String? pairedRecipientId = await handleAppLinks(deviceId);
 
   runApp(MyApp(
     deviceId: deviceId,
@@ -106,11 +121,11 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     if (widget.initialPairSuccessRecipientId != null) {
-      debugLog("🚀 Affichage de l'écran de succès appairage...", level: 'INFO');
+      debugLog("🚀 Affichage écran succès appairage", level: 'INFO');
       _showPairSuccess = true;
       Timer(const Duration(seconds: 3), () {
         if (mounted) {
-          debugLog("⏳ Délai écran succès terminé", level: 'INFO');
+          debugLog("⏳ Fin écran succès", level: 'INFO');
           setState(() => _showPairSuccess = false);
         }
       });
@@ -156,7 +171,7 @@ class _MyAppState extends State<MyApp> {
           } else {
             return LoginScreen(
               deviceLang: widget.deviceLang,
-              deviceId: widget.deviceId, // ajouté le 21/05/2025 — requis par LoginScreen
+              deviceId: widget.deviceId,
             );
           }
         },

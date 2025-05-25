@@ -71,3 +71,10 @@ ios/.generated/
 # === Logs ===
 *.log
 *.hprof
+
+# Ignorer les anciens APK et les archives HTML/Dart
+# Ignorer les anciens APK et les archives HTML
+apk/app-release_*.apk
+archives/
+lib/**/_archives/
+

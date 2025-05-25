@@ -106,7 +106,10 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                   const SizedBox(width: 12),
                   Text(
                     getUILabel('invite_someone_button', widget.deviceLang),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),

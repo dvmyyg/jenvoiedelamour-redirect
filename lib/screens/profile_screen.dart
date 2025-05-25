@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/debug_log.dart';
 import '../services/i18n_service.dart';
 import '../services/firestore_service.dart'; // ajouté le 21/05/2025 pour gérer users/{uid}
+import 'home_selector.dart'; // ajouté le 23/05/2025 — bouton retour vers HomeSelector
 
 class ProfileScreen extends StatefulWidget {
   final String deviceId;
@@ -112,6 +113,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  // ajouté le 23/05/2025 — bouton retour vers HomeSelector
+  void _goToHome() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomeSelector(
+          deviceId: widget.deviceId,
+          deviceLang: widget.deviceLang,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -211,6 +225,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: _logout,
               icon: const Icon(Icons.logout),
               label: Text(getUILabel('logout_button', widget.deviceLang)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white10,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(48),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // ajouté le 23/05/2025 — retour à l'accueil
+            ElevatedButton.icon(
+              onPressed: _goToHome,
+              icon: const Icon(Icons.home),
+              label: Text(getUILabel('back_home_button', widget.deviceLang)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white10,
                 foregroundColor: Colors.white,

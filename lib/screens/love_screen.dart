@@ -1,5 +1,9 @@
 //  lib/screens/love_screen.dart
 
+// Historique du fichier
+// V002 - ajout explicite du paramètre displayName (prénom) - 2025/05/24 08h20
+// V001 - version nécessitant une correction pour le prénom utilisateur - 2025/05/23 21h00
+
 import '../utils/debug_log.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -7,7 +11,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../services/i18n_service.dart';
-import '../screens/settings_screen.dart';
 import '../screens/recipients_screen.dart';
 import '../screens/send_message_screen.dart';
 import '../models/recipient.dart';
@@ -25,11 +28,14 @@ class LoveScreen extends StatefulWidget {
   final String deviceId;
   final bool isReceiver;
   final String deviceLang;
+  final String? displayName; // 👈 ajout du prénom utilisateur
+
   const LoveScreen({
     super.key,
     required this.deviceId,
     required this.isReceiver,
     required this.deviceLang,
+    this.displayName, // 👈 injection optionnelle
   });
 
   @override
@@ -66,7 +72,7 @@ class _LoveScreenState extends State<LoveScreen> {
         final messageType = data['messageType'] as String;
         final receivedSenderName = data['senderName'] as String?;
 
-        debugLog("🌟 Message reçu : ${messageType}");
+        debugLog("🌟 Message reçu : $messageType");
 
         setState(() => showIcon = true);
         final localizedBody = getMessageBody(
@@ -92,7 +98,7 @@ class _LoveScreenState extends State<LoveScreen> {
         .doc(widget.deviceId)
         .get();
     senderName = doc.data()?['displayName'] as String?;
-    debugLog("💛 Nom du device (senderName) : ${senderName}");
+    debugLog("💛 Nom du device (senderName) : $senderName");
   }
 
   Future<void> _loadRecipients() async {
@@ -162,12 +168,29 @@ class _LoveScreenState extends State<LoveScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.favorite, color: Colors.red),
-            const SizedBox(width: 8),
-            Text(getUILabel('love_screen_title', widget.deviceLang)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.favorite, color: Colors.red),
+                const SizedBox(width: 8),
+                Text(getUILabel('love_screen_title', widget.deviceLang)),
+              ],
+            ),
+            if (widget.displayName != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  widget.displayName!,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
           ],
         ),
         actions: [
@@ -308,10 +331,7 @@ class _LoveScreenState extends State<LoveScreen> {
     );
   }
 
-  Future<void> _showNotification(
-      String body,
-      String? receivedSenderName,
-      ) async {
+  Future<void> _showNotification(String body, String? receivedSenderName) async {
     final title = receivedSenderName != null
         ? "💌 $receivedSenderName t’a envoyé un message"
         : getUILabel('message_received_title', widget.deviceLang);

@@ -1,14 +1,20 @@
 //  lib/screens/login_screen.dart
 
+// Historique du fichier
+// V002 - ajout import cloud_firestore pour FirebaseFirestore & SetOptions - 2025/05/24 10h31
+// V001 - version initiale
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // ✅ ajouté
 import 'register_screen.dart';
 import '../utils/debug_log.dart';
-import '../services/i18n_service.dart'; // ajouté le 21/05/2025 — pour accès aux traductions UI
+import '../services/i18n_service.dart'; // pour accès aux traductions UI
+import '../services/firestore_service.dart'; // ajouté pour charger prénom après login
 
 class LoginScreen extends StatefulWidget {
   final String deviceLang;
-  final String deviceId; // ajouté le 21/05/2025 — requis pour register_screen.dart
+  final String deviceId;
 
   const LoginScreen({
     super.key,
@@ -27,10 +33,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+
+      final uid = credential.user?.uid;
+      if (uid == null) throw Exception("UID null après connexion");
+
+      // 🔁 Lecture de users/{uid} pour récupérer prénom
+      final userData = await getUserProfile(uid);
+      final firstName = userData?['firstName'] ?? '';
+
+      debugLog("👤 Connexion réussie, prénom=$firstName");
+
+      // 🔄 Mise à jour de devices/{deviceId}
+      await FirebaseFirestore.instance
+          .collection('devices')
+          .doc(widget.deviceId)
+          .set({
+        'displayName': firstName,
+      }, SetOptions(merge: true));
+
     } catch (e) {
       debugLog("❌ Login failed: $e", level: 'ERROR');
       setState(() => _error = getUILabel('login_error', widget.deviceLang));

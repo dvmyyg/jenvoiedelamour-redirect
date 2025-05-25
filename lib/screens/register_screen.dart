@@ -2,18 +2,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/i18n_service.dart';
 import '../utils/debug_log.dart';
-import 'email_verification_screen.dart'; // ajouté le 21/05/2025 pour rediriger si email non vérifié
-import '../services/i18n_service.dart'; // ajouté le 21/05/2025 — accès aux traductions dynamiques
+import '../screens/email_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
+  final String deviceId;
   final String deviceLang;
-  final String deviceId; // ajouté le 21/05/2025 car nécessaire à la suite du parcours
 
   const RegisterScreen({
     super.key,
-    required this.deviceLang,
     required this.deviceId,
+    required this.deviceLang,
   });
 
   @override
@@ -24,83 +25,114 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // ajouté le 22/05/2025 — champ prénom à la création
+  final _nameController = TextEditingController();
+
   bool _isLoading = false;
   String? _errorMessage;
-  String? _successMessage;
 
-  // modifié le 21/05/2025 — redirige vers EmailVerificationScreen si l’email n’est pas validé
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+    final password = _passwordController.text;
+    final displayName = _nameController.text.trim();
 
     try {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-        _successMessage = null;
-      });
-
       final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      final user = credential.user;
+      final uid = credential.user?.uid;
+      if (uid == null) throw Exception("UID null");
 
-      if (user != null && !user.emailVerified) {
-        await user.sendEmailVerification();
-        debugLog("📩 Email de vérification envoyé à $email");
+      // Sauvegarde dans Firestore
+      await FirebaseFirestore.instance.collection('devices').doc(widget.deviceId).set({
+        'deviceId': widget.deviceId,
+        'email': email,
+        'displayName': displayName,
+        'createdAt': Timestamp.now(),
+      }, SetOptions(merge: true));
 
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EmailVerificationScreen(
-              deviceId: widget.deviceId,
-              deviceLang: widget.deviceLang,
-            ),
+      await credential.user?.sendEmailVerification();
+
+      debugLog("✅ Compte créé : $email / $displayName");
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EmailVerificationScreen(
+            deviceId: widget.deviceId,
+            deviceLang: widget.deviceLang,
           ),
-        );
-        return;
-      }
-
-      // normalement inatteignable ici, sauf si le mail a déjà été vérifié manuellement
-      debugLog("✅ Utilisateur inscrit et email déjà vérifié (rare) : $email");
-      _successMessage = getUILabel('email_verified_info', widget.deviceLang);
-    } on FirebaseAuthException catch (e) {
-      debugLog("❌ Erreur d'enregistrement : ${e.message}", level: 'ERROR');
+        ),
+      );
+    } catch (e) {
+      debugLog("❌ Erreur création compte : $e", level: 'ERROR');
       setState(() {
-        _errorMessage = e.message;
+        _errorMessage = e.toString();
+        _isLoading = false;
       });
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final lang = widget.deviceLang;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(getUILabel('register_title', widget.deviceLang)),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
+        title: Text(getUILabel('register_title', lang)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
             children: [
+              TextFormField(
+                controller: _nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: getUILabel('profile_firstname_label', lang),
+                  labelStyle: const TextStyle(color: Colors.white),
+                  enabledBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.pink),
+                  ),
+                ),
+                validator: (value) =>
+                value == null || value.trim().isEmpty ? getUILabel('required_field', lang) : null,
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _emailController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: getUILabel('email_label', widget.deviceLang),
+                  labelText: getUILabel('email_label', lang),
                   labelStyle: const TextStyle(color: Colors.white),
                 ),
                 validator: (value) =>
-                value == null || value.isEmpty ? getUILabel('required_field', widget.deviceLang) : null,
+                value != null && value.contains('@') ? null : getUILabel('invalid_email', lang),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -108,42 +140,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: getUILabel('password_label', widget.deviceLang),
+                  labelText: getUILabel('password_label', lang),
                   labelStyle: const TextStyle(color: Colors.white),
                 ),
-                validator: (value) => value != null && value.length >= 6
-                    ? null
-                    : getUILabel('password_min_length', widget.deviceLang),
+                validator: (value) =>
+                value != null && value.length >= 6 ? null : getUILabel('password_min_length', lang),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.redAccent),
                 ),
-              if (_successMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    _successMessage!,
-                    style: const TextStyle(color: Colors.greenAccent),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: _isLoading ? null : _register,
+                icon: const Icon(Icons.person_add),
+                label: Text(getUILabel('register_button', lang)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink,
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(48),
                 ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Text(getUILabel('create_account_button', widget.deviceLang)),
               ),
             ],
           ),

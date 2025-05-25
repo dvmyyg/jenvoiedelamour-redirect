@@ -2,10 +2,6 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Historique du fichier -->
-    <!-- V002 - ajout support pour app://jela - 2025/05/25 19h42 -->
-    <!-- V001 - support intent://jela.app/open - 2025/05/24 15h20 -->
-
     <!-- ✅ Requis pour FCM -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -44,14 +40,6 @@
                     android:scheme="intent"
                     android:host="jela.app"
                     android:pathPrefix="/open" />
-            </intent-filter>
-
-            <!-- ✅ Gère app://jela?recipient=... -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="app" android:host="jela" />
             </intent-filter>
 
         </activity>
