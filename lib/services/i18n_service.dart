@@ -188,6 +188,87 @@ String getUILabel(String key, String langCode) {
       'es': 'Correo o contraseña incorrectos',
       'en': 'Wrong email or password',
     },
+    'validate_invite_button': {
+      'fr': "Valider une invitation",
+      'en': "Validate an invitation",
+      'de': "Einladung bestätigen",
+      'es': "Validar una invitación",
+    },
+
+    'paste_invite_hint': {
+      'fr': "Collez ici le lien reçu",
+      'en': "Paste the link here",
+      'de': "Füge den Link hier ein",
+      'es': "Pega el enlace aquí",
+    },
+
+    'validate_button': {
+      'fr': "Valider",
+      'en': "Validate",
+      'de': "Bestätigen",
+      'es': "Validar",
+    },
+
+    'pairing_success': {
+      'fr': "Appairage réussi 🎉",
+      'en': "Pairing successful 🎉",
+      'de': "Erfolgreich gekoppelt 🎉",
+      'es': "¡Emparejamiento exitoso 🎉!",
+    },
+    'already_paired': {
+      'fr': "Cet utilisateur est déjà appairé.",
+      'en': "This user is already paired.",
+      'de': "Dieser Kontakt ist bereits gekoppelt.",
+      'es': "Este contacto ya está emparejado.",
+    },
+    'invalid_invite_link': {
+      'fr': "Lien invalide",
+      'en': "Invalid link",
+      'de': "Ungültiger Link",
+      'es': "Enlace no válido",
+    },
+    'default_pairing_name': {
+      'fr': '❤️ Appairé',
+      'en': '❤️ Paired',
+      'de': '❤️ Verbunden',
+      'es': '❤️ Emparejado',
+    },
+    'relation_partner': {
+      'fr': 'Partenaire',
+      'en': 'Partner',
+      'de': 'Partner',
+      'es': 'Pareja',
+    },
+    'relation_friend': {
+      'fr': 'Ami',
+      'en': 'Friend',
+      'de': 'Freund',
+      'es': 'Amigo',
+    },
+    'relation_family': {
+      'fr': 'Famille',
+      'en': 'Family',
+      'de': 'Familie',
+      'es': 'Familia',
+    },
+    'relation_sibling': {
+      'fr': 'Frère / Sœur',
+      'en': 'Sibling',
+      'de': 'Geschwister',
+      'es': 'Hermano/a',
+    },
+    'relation_child': {
+      'fr': 'Enfant',
+      'en': 'Child',
+      'de': 'Kind',
+      'es': 'Niño/a',
+    },
+    'relation_parent': {
+      'fr': 'Parent',
+      'en': 'Parent',
+      'de': 'Elternteil',
+      'es': 'Padre/Madre',
+    },
     'edit_recipient_title': {
       'fr': '✏️ Modifier le destinataire',
       'de': '✏️ Empfänger bearbeiten',

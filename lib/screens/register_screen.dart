@@ -1,4 +1,6 @@
-//  lib/screens/register_screen.dart
+// Historique du fichier
+// V002 - ajout de la sauvegarde du prénom dans Firestore et Firebase Auth - 2025/05/25 21h30
+// V001 - version initiale - 2025/05/22
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/i18n_service.dart';
 import '../utils/debug_log.dart';
 import '../screens/email_verification_screen.dart';
+import '../services/firestore_service.dart'; // ajouté le 25/05/2025 pour gérer users/{uid}
 
 class RegisterScreen extends StatefulWidget {
   final String deviceId;
@@ -59,13 +62,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final uid = credential.user?.uid;
       if (uid == null) throw Exception("UID null");
 
-      // Sauvegarde dans Firestore
+      // Sauvegarde dans Firestore - collection devices
       await FirebaseFirestore.instance.collection('devices').doc(widget.deviceId).set({
         'deviceId': widget.deviceId,
         'email': email,
         'displayName': displayName,
         'createdAt': Timestamp.now(),
       }, SetOptions(merge: true));
+
+      // Sauvegarde dans Firestore - collection users
+      await saveUserProfile(
+        uid: uid,
+        email: email,
+        firstName: displayName,
+      );
+
+      // Mise à jour du displayName dans Firebase Auth
+      await credential.user?.updateDisplayName(displayName);
 
       await credential.user?.sendEmailVerification();
 
