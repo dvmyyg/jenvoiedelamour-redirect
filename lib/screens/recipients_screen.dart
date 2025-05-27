@@ -1,6 +1,7 @@
 //  lib/screens/recipients_screen.dart
 
 // Historique du fichier
+// V010 - correction affichage prénom miroir dans appairage manuel - 2025/05/27 22h51
 // V009 - suppression de l’affichage du champ 'relation' dans la liste - 2025/05/26 15h13
 // V008 - vérification correcte du prénom miroir dans l’appairage - 2025/05/26 11h47
 // V007 - appairage bilatéral avec prénom miroir - 2025/05/26 11h08
@@ -12,8 +13,8 @@
 // V001 - version initiale - 2025/05/21
 
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:share_plus/share_plus.dart';
 import '../services/recipient_service.dart';
 import '../models/recipient.dart';
 import 'recipient_details_screen.dart';
@@ -23,7 +24,11 @@ class RecipientsScreen extends StatefulWidget {
   final String deviceId;
   final String deviceLang;
 
-  const RecipientsScreen({super.key, required this.deviceId, required this.deviceLang});
+  const RecipientsScreen({
+    super.key,
+    required this.deviceId,
+    required this.deviceLang,
+  });
 
   @override
   State<RecipientsScreen> createState() => _RecipientsScreenState();
@@ -50,16 +55,28 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text(getUILabel('delete_contact_title', widget.deviceLang), style: const TextStyle(color: Colors.white)),
-        content: Text(getUILabel('delete_contact_warning', widget.deviceLang), style: const TextStyle(color: Colors.white70)),
+        title: Text(
+          getUILabel('delete_contact_title', widget.deviceLang),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          getUILabel('delete_contact_warning', widget.deviceLang),
+          style: const TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(getUILabel('cancel_button', widget.deviceLang), style: const TextStyle(color: Colors.grey)),
+            child: Text(
+              getUILabel('cancel_button', widget.deviceLang),
+              style: const TextStyle(color: Colors.grey),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(getUILabel('delete_button', widget.deviceLang), style: const TextStyle(color: Colors.red)),
+            child: Text(
+              getUILabel('delete_button', widget.deviceLang),
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -72,7 +89,8 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
   }
 
   void _shareInviteLink() {
-    final inviteLink = "https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${widget.deviceId}";
+    final inviteLink =
+        "https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${widget.deviceId}";
     Share.share(inviteLink);
   }
 
@@ -82,7 +100,10 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text(getUILabel('validate_invite_button', widget.deviceLang), style: const TextStyle(color: Colors.white)),
+        title: Text(
+          getUILabel('validate_invite_button', widget.deviceLang),
+          style: const TextStyle(color: Colors.white),
+        ),
         content: TextFormField(
           controller: controller,
           style: const TextStyle(color: Colors.white),
@@ -94,7 +115,10 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(getUILabel('cancel_button', widget.deviceLang), style: const TextStyle(color: Colors.grey)),
+            child: Text(
+              getUILabel('cancel_button', widget.deviceLang),
+              style: const TextStyle(color: Colors.grey),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -105,16 +129,27 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                 final alreadyPaired = _recipients.any((r) => r.id == recipientId);
                 if (alreadyPaired) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(getUILabel('already_paired', widget.deviceLang)), backgroundColor: Colors.orange),
+                    SnackBar(
+                      content: Text(getUILabel('already_paired', widget.deviceLang)),
+                      backgroundColor: Colors.orange,
+                    ),
                   );
                   return;
                 }
 
-                final snapA = await FirebaseFirestore.instance.collection('devices').doc(recipientId).get();
-                final displayNameA = snapA.data()?['displayName'] ?? getUILabel('default_pairing_name', widget.deviceLang);
+                final snapA = await FirebaseFirestore.instance
+                    .collection('devices')
+                    .doc(recipientId)
+                    .get();
+                final displayNameA =
+                    snapA.data()?['displayName'] ?? getUILabel('default_pairing_name', widget.deviceLang);
 
-                final snapB = await FirebaseFirestore.instance.collection('devices').doc(widget.deviceId).get();
-                final displayNameB = snapB.data()?['displayName'] ?? getUILabel('default_pairing_name', widget.deviceLang);
+                final snapB = await FirebaseFirestore.instance
+                    .collection('devices')
+                    .doc(widget.deviceId)
+                    .get();
+                final displayNameB =
+                    snapB.data()?['displayName'] ?? getUILabel('default_pairing_name', widget.deviceLang);
 
                 await _recipientService.addRecipient(Recipient(
                   id: recipientId,
@@ -145,16 +180,25 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                   Navigator.of(context).pop();
                   _loadRecipients();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(getUILabel('pairing_success', widget.deviceLang)), backgroundColor: Colors.green),
+                    SnackBar(
+                      content: Text(getUILabel('pairing_success', widget.deviceLang)),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(getUILabel('invalid_invite_link', widget.deviceLang)), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(getUILabel('invalid_invite_link', widget.deviceLang)),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
-            child: Text(getUILabel('validate_button', widget.deviceLang), style: const TextStyle(color: Colors.pink)),
+            child: Text(
+              getUILabel('validate_button', widget.deviceLang),
+              style: const TextStyle(color: Colors.pink),
+            ),
           ),
         ],
       ),
@@ -178,9 +222,19 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
                 children: [
-                  const CircleAvatar(radius: 16, backgroundColor: Colors.pink, child: Icon(Icons.add, size: 20, color: Colors.white)),
+                  const CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.pink,
+                    child: Icon(Icons.add, size: 20, color: Colors.white),
+                  ),
                   const SizedBox(width: 12),
-                  Text(getUILabel('invite_someone_button', widget.deviceLang), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text(
+                    getUILabel('invite_someone_button', widget.deviceLang),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -191,9 +245,19 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: Row(
                 children: [
-                  const CircleAvatar(radius: 16, backgroundColor: Colors.white12, child: Icon(Icons.link, size: 20, color: Colors.white)),
+                  const CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.white12,
+                    child: Icon(Icons.link, size: 20, color: Colors.white),
+                  ),
                   const SizedBox(width: 12),
-                  Text(getUILabel('validate_invite_button', widget.deviceLang), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text(
+                    getUILabel('validate_invite_button', widget.deviceLang),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -203,7 +267,6 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
             return ListTile(
               leading: Text(r.icon, style: const TextStyle(fontSize: 24)),
               title: Text(r.displayName, style: const TextStyle(color: Colors.white)),
-              subtitle: null,
               trailing: IconButton(
                 icon: const Icon(Icons.edit, color: Colors.white70),
                 onPressed: () => _confirmDeleteRecipient(r.id),
