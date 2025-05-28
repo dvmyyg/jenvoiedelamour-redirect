@@ -1,20 +1,37 @@
-//  lib/screens/recipients_screen.dart
-
-// Historique du fichier
-// V010 - correction affichage prénom miroir dans appairage manuel - 2025/05/27 22h51
-// V009 - suppression de l’affichage du champ 'relation' dans la liste - 2025/05/26 15h13
-// V008 - vérification correcte du prénom miroir dans l’appairage - 2025/05/26 11h47
-// V007 - appairage bilatéral avec prénom miroir - 2025/05/26 11h08
-// V006 - ajout vérification doublon lors de l'appairage manuel - 2025/05/26 09h38
-// V005 - ajout des paramètres obligatoires 'allowedPacks' et 'paired' dans Recipient - 2025/05/26 09h18
-// V004 - ajout de la validation du champ de lien dans la boîte de dialogue - 2025/05/26 09h13
-// V003 - connexion du lien collé à la méthode d’appairage - 2025/05/26 08h55
-// V002 - ajout du bouton "Valider une invitation" avec champ de lien - 2025/05/26 08h52
+// -------------------------------------------------------------
+// 📄 FICHIER : lib/screens/recipients_screen.dart
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Affiche la liste des destinataires liés à l’appareil
+// ✅ Bouton “Inviter quelqu’un” → partage de lien d’invitation
+// ✅ Bouton “Valider une invitation” → saisie manuelle du lien
+// ✅ Icône ✎ → édition de la catégorie (partenaire, famille, ami)
+// ✅ Icône 🗑️ → suppression d’un destinataire (avec confirmation)
+// ✅ Navigation → écran de détail (RecipientDetailsScreen)
+// ✅ Textes traduits dynamiquement via getUILabel (i18n_service)
+// ✅ Chargement Firestore + appel à RecipientService
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V014 - ajout du bloc descriptif des fonctionnalités principales - 2025/05/28 14h32
+// V013 - restauration des boutons d'invitation et de suppression - 2025/05/28 20h25
+// V012 - réintégration suppression recipient via menu contextuel - 2025/05/27 21h35
+// V011 - ajout menu édition du destinataire avec changement de catégorie - 2025/05/27 14h54
+// V010 - suppression de l’affichage du champ 'relation' dans la liste - 2025/05/26 15h13
+// V009 - vérification correcte du prénom miroir dans l’appairage - 2025/05/26 11h47
+// V008 - appairage bilatéral avec prénom miroir - 2025/05/26 11h08
+// V007 - ajout vérification doublon lors de l'appairage manuel - 2025/05/26 09h38
+// V006 - ajout des paramètres obligatoires 'allowedPacks' et 'paired' dans Recipient - 2025/05/26 09h18
+// V005 - ajout de la validation du champ de lien dans la boîte de dialogue - 2025/05/26 09h13
+// V004 - connexion du lien collé à la méthode d’appairage - 2025/05/26 08h55
+// V003 - ajout du bouton "Valider une invitation" avec champ de lien - 2025/05/26 08h52
+// V002 - bouton "Envoyer une invitation" + partage lien - 2025/05/25 22h40
 // V001 - version initiale - 2025/05/21
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/recipient_service.dart';
 import '../models/recipient.dart';
 import 'recipient_details_screen.dart';
@@ -24,11 +41,7 @@ class RecipientsScreen extends StatefulWidget {
   final String deviceId;
   final String deviceLang;
 
-  const RecipientsScreen({
-    super.key,
-    required this.deviceId,
-    required this.deviceLang,
-  });
+  const RecipientsScreen({super.key, required this.deviceId, required this.deviceLang});
 
   @override
   State<RecipientsScreen> createState() => _RecipientsScreenState();
@@ -55,28 +68,16 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text(
-          getUILabel('delete_contact_title', widget.deviceLang),
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          getUILabel('delete_contact_warning', widget.deviceLang),
-          style: const TextStyle(color: Colors.white70),
-        ),
+        title: Text(getUILabel('delete_contact_title', widget.deviceLang), style: const TextStyle(color: Colors.white)),
+        content: Text(getUILabel('delete_contact_warning', widget.deviceLang), style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              getUILabel('cancel_button', widget.deviceLang),
-              style: const TextStyle(color: Colors.grey),
-            ),
+            child: Text(getUILabel('cancel_button', widget.deviceLang), style: const TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              getUILabel('delete_button', widget.deviceLang),
-              style: const TextStyle(color: Colors.red),
-            ),
+            child: Text(getUILabel('delete_button', widget.deviceLang), style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -89,8 +90,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
   }
 
   void _shareInviteLink() {
-    final inviteLink =
-        "https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${widget.deviceId}";
+    final inviteLink = "https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${widget.deviceId}";
     Share.share(inviteLink);
   }
 
@@ -100,10 +100,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text(
-          getUILabel('validate_invite_button', widget.deviceLang),
-          style: const TextStyle(color: Colors.white),
-        ),
+        title: Text(getUILabel('validate_invite_button', widget.deviceLang), style: const TextStyle(color: Colors.white)),
         content: TextFormField(
           controller: controller,
           style: const TextStyle(color: Colors.white),
@@ -115,10 +112,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              getUILabel('cancel_button', widget.deviceLang),
-              style: const TextStyle(color: Colors.grey),
-            ),
+            child: Text(getUILabel('cancel_button', widget.deviceLang), style: const TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
@@ -137,19 +131,11 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                   return;
                 }
 
-                final snapA = await FirebaseFirestore.instance
-                    .collection('devices')
-                    .doc(recipientId)
-                    .get();
-                final displayNameA =
-                    snapA.data()?['displayName'] ?? getUILabel('default_pairing_name', widget.deviceLang);
+                final snapA = await FirebaseFirestore.instance.collection('devices').doc(recipientId).get();
+                final displayNameA = snapA.data()?['displayName'] ?? getUILabel('default_pairing_name', widget.deviceLang);
 
-                final snapB = await FirebaseFirestore.instance
-                    .collection('devices')
-                    .doc(widget.deviceId)
-                    .get();
-                final displayNameB =
-                    snapB.data()?['displayName'] ?? getUILabel('default_pairing_name', widget.deviceLang);
+                final snapB = await FirebaseFirestore.instance.collection('devices').doc(widget.deviceId).get();
+                final displayNameB = snapB.data()?['displayName'] ?? getUILabel('default_pairing_name', widget.deviceLang);
 
                 await _recipientService.addRecipient(Recipient(
                   id: recipientId,
@@ -161,12 +147,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                   paired: true,
                 ));
 
-                await FirebaseFirestore.instance
-                    .collection('devices')
-                    .doc(recipientId)
-                    .collection('recipients')
-                    .doc(widget.deviceId)
-                    .set({
+                await FirebaseFirestore.instance.collection('devices').doc(recipientId).collection('recipients').doc(widget.deviceId).set({
                   'id': widget.deviceId,
                   'displayName': displayNameB,
                   'icon': '💌',
@@ -195,13 +176,52 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                 );
               }
             },
-            child: Text(
-              getUILabel('validate_button', widget.deviceLang),
-              style: const TextStyle(color: Colors.pink),
-            ),
+            child: Text(getUILabel('validate_button', widget.deviceLang), style: const TextStyle(color: Colors.pink)),
           ),
         ],
       ),
+    );
+  }
+
+  void _editRecipient(Recipient r) {
+    showDialog(
+      context: context,
+      builder: (_) {
+        String selectedCategory = r.relation;
+        return AlertDialog(
+          backgroundColor: Colors.black,
+          title: Text(getUILabel('edit_contact_category', widget.deviceLang), style: const TextStyle(color: Colors.white)),
+          content: DropdownButtonFormField<String>(
+            value: selectedCategory,
+            dropdownColor: Colors.black,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+            items: [
+              DropdownMenuItem(value: 'relation_partner', child: Text(getUILabel('relation_partner', widget.deviceLang))),
+              DropdownMenuItem(value: 'relation_family', child: Text(getUILabel('relation_family', widget.deviceLang))),
+              DropdownMenuItem(value: 'relation_friend', child: Text(getUILabel('relation_friend', widget.deviceLang))),
+            ],
+            onChanged: (value) => selectedCategory = value!,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(getUILabel('cancel_button', widget.deviceLang)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final updated = r.copyWith(relation: selectedCategory);
+                await _recipientService.updateRecipient(updated);
+                if (mounted) {
+                  Navigator.pop(context);
+                  _loadRecipients();
+                }
+              },
+              child: Text(getUILabel('save_button', widget.deviceLang), style: const TextStyle(color: Colors.pink)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -228,13 +248,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                     child: Icon(Icons.add, size: 20, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    getUILabel('invite_someone_button', widget.deviceLang),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text(getUILabel('invite_someone_button', widget.deviceLang), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -251,13 +265,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                     child: Icon(Icons.link, size: 20, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    getUILabel('validate_invite_button', widget.deviceLang),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text(getUILabel('validate_invite_button', widget.deviceLang), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -267,9 +275,19 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
             return ListTile(
               leading: Text(r.icon, style: const TextStyle(fontSize: 24)),
               title: Text(r.displayName, style: const TextStyle(color: Colors.white)),
-              trailing: IconButton(
-                icon: const Icon(Icons.edit, color: Colors.white70),
-                onPressed: () => _confirmDeleteRecipient(r.id),
+              subtitle: Text(getUILabel(r.relation, widget.deviceLang), style: const TextStyle(color: Colors.white70)),
+              trailing: Wrap(
+                spacing: 12,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.white70),
+                    onPressed: () => _editRecipient(r),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.redAccent),
+                    onPressed: () => _confirmDeleteRecipient(r.id),
+                  ),
+                ],
               ),
               onTap: () {
                 Navigator.push(
