@@ -269,6 +269,18 @@ String getUILabel(String key, String langCode) {
       'de': 'Elternteil',
       'es': 'Padre/Madre',
     },
+    'edit_contact_category': {
+      'fr': 'Modifier la catégorie du contact',
+      'en': 'Edit contact category',
+      'de': 'Kontaktkategorie bearbeiten',
+      'es': 'Editar la categoría del contacto',
+    },
+    'save_button': {
+      'fr': 'Enregistrer',
+      'en': 'Save',
+      'de': 'Speichern',
+      'es': 'Guardar',
+    },
     'edit_recipient_title': {
       'fr': '✏️ Modifier le destinataire',
       'de': '✏️ Empfänger bearbeiten',
