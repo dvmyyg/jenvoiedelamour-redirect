@@ -81,3 +81,4 @@ class MessageService {
     );
   }
 }
+// fin de page de lib/services/message_service.dart

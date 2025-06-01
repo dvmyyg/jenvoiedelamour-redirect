@@ -1,12 +1,27 @@
-//  lib/screens/email_verification_screen.dart
-
-// Historique du fichier
+// -------------------------------------------------------------
+// 📄 FICHIER : lib/screens/email_verification_screen.dart
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Écran d'attente pour la vérification de l'adresse email après inscription ou connexion.
+// ✅ Vérifie périodiquement l'état de vérification de l'email de l'utilisateur actuel via Firebase Authentication.
+// ✅ Redirige automatiquement vers l'écran HomeSelector une fois l'email vérifié.
+// ✅ Permet de renvoyer l'email de vérification manuellement.
+// ✅ S'appuie entièrement sur FirebaseAuth.instance.currentUser pour la logique utilisateur.
+// ✅ N'utilise plus deviceId pour l'identification ou la logique.
+// ✅ Boutons de vérification manuelle et de renvoi.
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V004 - Code examiné par Gemini. Logique de vérification automatique (polling) et manuelle confirmée comme fonctionnelle et basée sur l'UID Firebase. - 2025/05/31
 // V003 - Refactoring : Suppression du paramètre deviceId. L'écran s'appuie entièrement sur FirebaseAuth.instance.currentUser.
 //      - Suppression du passage de deviceId lors de la navigation vers HomeSelector. - 2025/05/29
 // V002 - suppression flèche retour + redirection automatique vers HomeSelector - 2025/05/25 21h45 (Historique hérité)
 // V001 - ajout polling automatique + boutons de vérif - 2025/05/22 (Historique hérité)
+// -------------------------------------------------------------
 
-// GEM - code corrigé par Gémini le 2025/05/29
+// GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
+
 
 import 'dart:async'; // pour timer périodique
 import 'package:flutter/material.dart';

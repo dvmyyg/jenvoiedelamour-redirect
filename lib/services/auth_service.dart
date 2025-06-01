@@ -1,4 +1,18 @@
-// 📄 lib/services/auth_service.dart
+// -------------------------------------------------------------
+// 📄 FICHIER : lib/services/auth_service.dart
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Service dédié à la gestion de l'authentification utilisateur via Firebase Authentication.
+// ✅ Fournit des méthodes pour l'enregistrement (email/password), la connexion (email/password), la déconnexion.
+// ✅ Permet l'envoi d'email de vérification et la suppression du compte utilisateur.
+// ✅ S'appuie entièrement sur l'instance de FirebaseAuth et l'objet User (identifié par UID).
+// ✅ Inclut une méthode pour vérifier si l'utilisateur est connecté et son email vérifié.
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V001 - Création du service d'authentification utilisant FirebaseAuth pour la gestion des utilisateurs (email/password, déconnexion, suppression, vérification email, état auth+verif). Structure initiale du service. - 2025/05/XX (Date de création approximative si non spécifiée)
+// -------------------------------------------------------------
 
 import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/debug_log.dart';

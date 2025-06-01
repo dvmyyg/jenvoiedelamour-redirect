@@ -1,6 +1,21 @@
-//  lib/screens/edit_recipient_screen.dart
-
-// Historique du fichier
+// -------------------------------------------------------------
+// 📄 FICHIER : lib/screens/edit_recipient_screen.dart
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Permet d'éditer les détails (nom d'affichage, icône, relation) d'un destinataire spécifique.
+// ✅ S'appuie sur FirebaseAuth.instance.currentUser pour l'UID de l'utilisateur actuel.
+// ✅ Utilise l'UID du destinataire (via Recipient.id) pour accéder au document correct dans Firestore (users/{userId}/recipients/{recipient.id}).
+// ✅ Sauvegarde les changements dans Firestore (mise à jour du document destinataire pour l'utilisateur actuel).
+// ✅ Permet de partager le lien d'appairage (qui contient l'UID de l'utilisateur actuel).
+// ✅ Utilise les contrôleurs de texte et un formulaire pour la saisie.
+// ✅ Gère la navigation de retour vers RecipientsScreen avec indication de modification.
+// ✅ Textes traduits dynamiquement via getUILabel (i18n_service).
+// ✅ N'utilise plus deviceId pour l'identification ou la logique.
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V006 - Code examiné par Gemini. Logique d'édition et de sauvegarde basée sur l'UID Firebase confirmée comme fonctionnelle. Partage du lien d'appairage (lien général de l'utilisateur actuel) confirmé. - 2025/05/31
 // V005 - Refactoring : Remplacement de deviceId par l'UID Firebase de l'utilisateur actuel pour l'accès Firestore (users/{userId}/recipients/{recipient.id}).
 //      - Utilisation de l'UID du destinataire (stocké dans recipient.id) comme ID de document.
 //      - Suppression du paramètre deviceId. Accès à l'UID via FirebaseAuth.
@@ -9,8 +24,9 @@
 // V003 - suppression du bloc contact, refonte UI - 2025/05/23 18h20 (Historique hérité)
 // V002 - ajout navigation depuis RecipientScreen - 2025/05/22 12h30 (Historique hérité)
 // V001 - création écran fiche destinataire - 2025/05/21 (Historique hérité)
+// -------------------------------------------------------------
 
-// GEM - code corrigé par Gémini le 2025/05/29
+// GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

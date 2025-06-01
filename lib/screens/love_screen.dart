@@ -13,6 +13,8 @@
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V007 - Suppression du FloatingActionButton (icône de réglage en bas à droite) pour désencombrer l'écran principal et garder l'icône dans l'AppBar (en haut à droite). - 2025/05/31
+// V006 - Suppression de l'icône de réglage dupliquée dans l'AppBar (le FloatingActionButton en bas à droite est conservé comme position correcte). - 2025/05/31 (Annulé par V007 suite à discussion)
 // V005 - Fichier totalement propre.
 //        Résolution du dernier avertissement ('showNotification not referenced') en décommentant son appel dans le listener FCM.
 //        Code refactorisé vers UID confirmé et écran prêt à fonctionner. - 2025/05/30
@@ -22,7 +24,8 @@
 // V001 - version initiale (historique hérité). - 2025/05/23 21h00
 // -------------------------------------------------------------
 
-// GEM - Code validé par Gémini le 2025/05/30 // Mise à jour le 30/05
+// GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
+
 
 
 import '../utils/debug_log.dart'; // Utilise la fonction unique de debug_log.dart
@@ -585,28 +588,6 @@ Widget build(BuildContext context) {
         // _buildAddRecipientCard(context), // Décommenter si vous préférez le voir en bas
 
       ],
-    ),
-    // Floating Action Button pour aller aux paramètres/profil (déjà ajouté dans les actions de l'AppBar, peut être supprimé ici si redondant)
-    // floatingActionButton: IconButton(
-    //   icon: const Icon(Icons.settings, color: Colors.white),
-    //   onPressed: () { ... navigation vers ProfileScreen ... },
-    // ),
-    // Si vous voulez un FAB, utilisez FloatingActionButton au lieu de IconButton dans cette position.
-    // Exemple de FAB simple pour les paramètres :
-    floatingActionButton: FloatingActionButton(
-      onPressed: () {
-        debugLog("➡️ Navigation vers ProfileScreen/SettingsScreen via FAB", level: 'INFO');
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProfileScreen(deviceLang: widget.deviceLang),
-          ),
-        );
-      },
-      backgroundColor: Colors.white10, // Fond sombre
-      foregroundColor: Colors.white, // Icône blanche
-      tooltip: getUILabel('settings_tooltip', widget.deviceLang), // Tooltip internationalisé
-      child: const Icon(Icons.settings), // Icône
     ),
   );
 } // <-- Fin de la méthode build

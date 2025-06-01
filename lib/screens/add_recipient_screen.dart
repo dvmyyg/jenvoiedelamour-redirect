@@ -1,13 +1,35 @@
-//  lib/screens/add_recipient_screen.dart
-
-// Historique du fichier
+// -------------------------------------------------------------
+// 📄 FICHIER : lib/screens/add_recipient_screen.dart
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Permet à l'utilisateur actuel de générer et partager son lien d'invitation (contenant son UID Firebase).
+// ✅ S'appuie sur FirebaseAuth.instance.currentUser pour obtenir l'UID de l'utilisateur actuel.
+// ✅ Utilise la librairie share_plus pour l'interface de partage système.
+// ✅ UI simplifiée centrée sur le bouton de partage.
+// ✅ N'utilise plus deviceId pour l'identification ou la logique.
+// ✅ Logique obsolète de création locale de destinataire "en attente" retirée.
+// ✅ Message partagé clarifié pour indiquer le processus de copier-coller de l'UID et inclure un lien de téléchargement de l'app (pointant vers l'APK hébergé sur GitHub Pages).
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V009 - Correction du placeholder "YOUR_APP_DOWNLOAD_LINK" dans la fonction _sharePairingLink avec l'URL spécifique de l'APK hébergé sur la page GitHub Pages du projet. - 2025/05/31
+//        https://dvmyyg.github.io/jenvoiedelamour-redirect/apk/app-release.apk
+// V008 - Nouvelle tentative de correction de la fonction _sharePairingLink pour résoudre l'erreur "named parameter 'placeholders' isn't defined" en utilisant replaceFirst pour l'interpolation des placeholders. Confirmation que le code précédent réintroduisait l'erreur. - 2025/05/31 (Remplacé par V009)
+// V007 - Nouvelle tentative de correction de la fonction _sharePairingLink pour résoudre l'erreur "named parameter 'placeholders' isn't defined" en utilisant replaceFirst pour l'interpolation des placeholders. - 2025/05/31 (Remplacé par V008)
+// V006 - Modification de la fonction _sharePairingLink pour améliorer le message partagé, en présentant l'UID comme un code à copier et en ajoutant potentiellement un lien de téléchargement de l'app. Code validé. - 2025/05/31 (Erreur de paramètre trouvée ensuite)
+// V005 - Discussion sur la simplification du code d'appairage partagé (potentiellement n'envoyer que l'UID au lieu de l'URL complète pour le processus manuel de copier-coller). - 2025/05/31
+// V004 - Correction du texte du message partagé pour indiquer le processus de copier-coller manuel, au lieu de cliquer sur le lien. - 2025/05/31
+// V003 - Code examiné par Gemini. Logique de génération et partage de lien d'invitation basé sur l'UID Firebase confirmée comme fonctionnelle. Logique obsolète bien retirée. - 2025/05/31
 // V002 - Refactoring : Suppression de la logique de création d'un destinataire "en attente" basée sur deviceId.
 //      - L'écran se concentre désormais sur la génération et le partage d'un lien d'invitation contenant l'UID Firebase de l'utilisateur actuel.
 //      - Suppression du paramètre deviceId. Accès à l'UID via FirebaseAuth.
 //      - Utilisation de l'UID dans le lien d'invitation. - 2025/05/29
 // V001 - version initiale (basée sur deviceId et création d'un destinataire en attente localement) - 2025/05/21
+// -------------------------------------------------------------
 
-// GEM - code corrigé par Gémini le 2025/05/29
+// GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
+
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Nécessaire pour obtenir l'UID de l'utilisateur actuel
@@ -34,26 +56,6 @@ class AddRecipientScreen extends StatefulWidget {
 }
 
 class _AddRecipientScreenState extends State<AddRecipientScreen> {
-  // Les contrôleurs de texte ne sont plus nécessaires si on ne crée pas un destinataire localement ici
-  // final _formKey = GlobalKey<FormState>(); // <-- POTENTIELLEMENT SUPPRIMÉ si le formulaire n'est plus utilisé
-  // final _displayNameController = TextEditingController(); // <-- POTENTIELLEMENT SUPPRIMÉ
-  // final _iconController = TextEditingController(); // <-- POTENTIELLEMENT SUPPRIMÉ
-
-  // Les listes de relations et le champ sélectionné pourraient être supprimés si le formulaire est retiré
-  /*
-  final List<String> relationKeys = [ // <-- POTENTIELLEMENT SUPPRIMÉ
-    'compagne',
-    'compagnon',
-    'enfant',
-    'maman',
-    'papa',
-    'ami',
-    'autre',
-  ];
-  late String _selectedRelationKey; // <-- POTENTIELLEMENT SUPPRIMÉ
-  */
-
-
   @override
   void initState() {
     super.initState();
@@ -61,74 +63,51 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
     // _selectedRelationKey = relationKeys.first; // <-- POTENTIELLEMENT SUPPRIMÉ
   }
 
-  // La méthode capitalize n'est plus nécessaire si on ne gère pas l'affichage du nom ici
-  /*
-  String capitalize(String input) { // <-- POTENTIELLEMENT SUPPRIMÉ
-    if (input.isEmpty) return input;
-    return input[0].toUpperCase() + input.substring(1).toLowerCase();
-  }
-  */
-
-  // La logique de sauvegarde d'un destinataire "en attente" est supprimée.
-  // L'appairage crée le destinataire directement via _pairUsers dans main.dart.
-  /*
-  Future<void> _saveRecipient() async { // <-- SUPPRIMÉ
-    if (!_formKey.currentState!.validate()) return;
-
-    final displayName = capitalize(_displayNameController.text.trim());
-    final icon = _iconController.text.trim();
-    final relation = _selectedRelationKey;
-
-    final id = const Uuid().v4(); // <-- ID local généré, obsolète
-
-    // Chemin Firestore basé sur deviceId, obsolète
-    final docRef = FirebaseFirestore.instance
-        .collection('devices')
-        .doc(widget.deviceId) // <-- deviceId obsolète
-        .collection('recipients')
-        .doc(id);
-
-    // Écriture Firestore, obsolète
-    await docRef.set({
-      'id': id,
-      'displayName': displayName,
-      'relation': relation,
-      'icon': icon,
-      'deviceId': null, // Marqué comme non appairé
-    });
-
-    if (!mounted) return;
-    _sharePairingLink(id); // Partage l'ID local, obsolète
-    Navigator.pop(context, true);
-  }
-  */
-
-  // Cette fonction est modifiée pour partager l'UID Firebase de l'utilisateur actuel.
-  void _sharePairingLink() { // Ne prend plus d'ID local en paramètre
-    // Obtenir l'UID de l'utilisateur actuellement connecté
+  // Cette fonction génère et partage l'UID Firebase de l'utilisateur actuel.
+  // Le message partagé guide l'ami pour copier/coller l'UID et inclut un lien de téléchargement de l'app.
+  void _sharePairingLink() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      // Gérer le cas où l'utilisateur n'est pas connecté (ne devrait pas arriver si main.dart redirige correctement)
-      debugPrint("Erreur : Impossible de générer le lien d'appairage, utilisateur non connecté."); // Utilisation de debugPrint ou debugLog
+      debugPrint("Erreur : Impossible de générer le lien d'appairage, utilisateur non connecté.");
       return;
     }
 
-    // Utiliser l'UID de l'utilisateur actuel dans le lien
-    // Le paramètre 'recipient' du lien contiendra maintenant l'UID de l'inviteur
-    final inviteLink = "https://dvmyyg.github.io/jenvoiedelamour-redirect/?recipient=${user.uid}";
+    // L'UID de l'utilisateur actuel à inclure dans le message comme code
+    final String currentUserId = user.uid;
+
+    // TODO: Obtenir le lien pour télécharger l'application (lien App Store, Google Play, App Distribution, etc.)
+    // Cela pourrait être une constante globale, une valeur de config, etc.
+    // Remplacez "YOUR_APP_DOWNLOAD_LINK" par le vrai lien !
+    final String appDownloadLink = "https://dvmyyg.github.io/jenvoiedelamour-redirect/apk/app-release.apk";
+
+
+    // Récupère le template de message traduit.
+    // Assurez-vous que la clé 'pairing_invitation_message' existe dans vos traductions
+    // et qu'elle utilise {uid} et {appLink} comme placeholders.
+    final String messageTemplate = getUILabel(
+        'pairing_invitation_message',
+        widget.deviceLang
+    );
+
+    // Construit le message final en insérant l'UID et le lien de téléchargement
+    // dans le template. Cette méthode assume que le template utilise '{uid}' et '{appLink}'.
+    // Si tes placeholders sont différents (ex: '%1', '%2'), adapte les appels à replaceAll ici.
+    String shareMessage = messageTemplate.replaceFirst('{uid}', currentUserId);
+    shareMessage = shareMessage.replaceFirst('{appLink}', appDownloadLink);
+
+    // Utilise getUILabel pour le sujet aussi, si ce n'est pas déjà fait
+    final String shareSubject = getUILabel('pairing_link_subject', widget.deviceLang);
 
     Share.share(
-      // TODO: Utiliser getUILabel pour le message du lien
-      '💌 Clique ici pour t’appairer avec moi dans l’app J’envoie de l’amour :\n$inviteLink',
-      subject: getUILabel('pairing_link_subject', widget.deviceLang), // Utilise i18n_service
+      shareMessage, // Utilise le message construit dynamiquement
+      subject: shareSubject, // Utilise le sujet traduit
     );
 
     // Après avoir partagé le lien, on peut sortir de cet écran.
     if (mounted) {
-      Navigator.pop(context); // On sort après le partage
+      Navigator.pop(context);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -193,5 +172,4 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
     );
   }
 }
-// Les méthodes _buildTextField et _buildRelationDropdown sont potentiellement supprimées
-// si le formulaire de nom/icône/relation est retiré de cet écran.
+// fin du fichier add_recipients_screen.dart

@@ -1,10 +1,23 @@
-// lib/models/recipient.dart
-
-// Historique du fichier
+// -------------------------------------------------------------
+// 📄 FICHIER : lib/models/recipient.dart
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Modèle de données pour représenter un destinataire (un autre utilisateur appairé).
+// ✅ Contient les informations essentielles d'un destinataire (nom d'affichage, icône, relation, packs autorisés, état d'appairage, type de catalogue).
+// ✅ Utilise l'UID Firebase de l'autre utilisateur comme identifiant unique principal ('id').
+// ✅ Fournit des méthodes pour copier l'objet (copyWith).
+// ✅ Inclut des factories et méthodes pour la conversion entre l'objet Dart et le format de données Firestore (Map<String, dynamic>).
+// ✅ La conversion Firestore utilise l'ID du document (qui est l'UID du destinataire) pour remplir le champ 'id' du modèle.
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V005 - Code examiné par Gemini. Modèle Recipient confirmé comme correctement refactorisé pour utiliser l'UID du destinataire comme ID principal ('id') et pour la conversion Firestore. Logique obsolète (deviceId) bien retirée. - 2025/05/31
 // V004 - Remplacement du champ deviceId par l'UID du destinataire dans le modèle. L'ID du document Firestore (stocké dans le champ 'id') devient l'UID du destinataire. - 2025/05/29
 // V003 - ajout de la méthode copyWith - 2025/05/27
 // V002 - ajout du champ catalogType pour sélection du type de messages - 2025/05/28 10h26
 // V001 - version initiale - 2025/05/21
+// -------------------------------------------------------------
 
 // GEM - code corrigé par Gémini le 2025/05/29
 

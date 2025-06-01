@@ -281,6 +281,12 @@ String getUILabel(String key, String langCode) {
       'de': 'Speichern',
       'es': 'Guardar',
     },
+    'pairing_invitation_message': {
+      'fr': 'Salut !\n\nPour te connecter à moi dans l\'app J\'envoie de l\'amour, copie ce code d\'appairage unique :\n\n{uid}\n\nEnsuite, ouvre l\'app, va dans la section Destinataires (l\'icône groupe/contacts) et utilise l\'option "Valider une invitation" pour coller ce code.\n\nSi tu n\'as pas encore installé l\'application, clique sur ce lien pour la télécharger :\n\n{appLink}',
+      'en': 'Hi!\n\nTo connect with me in the Send Love app, copy this unique pairing code:\n\n{uid}\n\nThen, open the app, go to the Recipients section (the group/contacts icon) and use the "Validate Invitation" option to paste this code.\n\nIf you haven\'t installed the app yet, click this link to download it:\n\n{appLink}',
+      'de': 'Hallo!\n\nUm dich mit mir in der Sende Liebe App zu verbinden, kopiere diesen einzigartigen Pairing-Code:\n\n{uid}\n\nÖffne dann die App, gehe zum Bereich Empfänger (das Gruppen-/Kontakte-Symbol) und verwende die Option "Einladung bestätigen", um diesen Code einzufügen.\n\nFalls du die App noch nicht installiert hast, klicke auf diesen Link, um sie herunterzuladen:\n\n{appLink}',
+      'es': '¡Hola!\n\nPara conectarte conmigo en la aplicación Enviar Amor, copia este código de emparejamiento único:\n\n{uid}\n\nAbre la aplicación, ve a la sección Destinatarios (el icono de grupo/contactos) y usa la opción "Validar invitación" para pegar este código.\n\nSi aún no has instalado la aplicación, haz clic en este enlace para descargarla:\n\n{appLink}',
+    },
     'edit_recipient_title': {
       'fr': '✏️ Modifier le destinataire',
       'de': '✏️ Empfänger bearbeiten',

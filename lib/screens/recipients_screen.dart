@@ -5,7 +5,7 @@
 // -------------------------------------------------------------
 // ✅ Affiche la liste des destinataires liés à l’utilisateur authentifié (par UID)
 // ✅ Bouton “Inviter quelqu’un” → navigue vers AddRecipientScreen (qui gère le partage de lien par UID)
-// ✅ Bouton “Valider une invitation” → saisie manuelle du lien/UID, déclenche l'appairage _pairUsers (basé sur UID)
+// ✅ Bouton “Valider une invitation” → saisie manuelle du lien/UID, déclenche l'appairage pairUsers (basé sur UID). La boîte de dialogue accepte l'URL complète ou l'UID pur.
 // ✅ Icône ✎ → navigation vers écran d’édition (passant l'UID du destinataire)
 // ✅ Icône 🗑️ → suppression d’un destinataire (appelant RecipientService par UID, avec confirmation)
 // ✅ Navigation → écran de chat/détail (RecipientDetailsScreen, passant l'UID du destinataire)
@@ -14,13 +14,14 @@
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V020 - Modification du bloc onPressed dans _showPasteLinkDialog pour accepter soit l'URL d'invitation (paramètre 'recipient'), soit l'UID Firebase pur, pour faciliter l'appairage manuel. Utilisation des nouvelles clés i18n pour les messages d'erreur. Code validé. - 2025/05/31
 // V019 - Correction de l'erreur d'exportation de '_pairUsers' en renommant la fonction en 'pairUsers' dans main.dart et en mettant à jour l'import et l'appel ici. - 2025/05/30
 // V018 - Correction de l'erreur Undefined name '_pairUsers' en décommentant l'import de main.dart. - 2025/05/30
 // V017 - Correction de l'avertissement 'unnecessary_to_list'. Code refactorisé vers UID confirmé. - 2025/05/30
 // V015 - Refactoring : Remplacement de deviceId par l'UID Firebase de l'utilisateur actuel.
 //      - Suppression du paramètre deviceId. Accès à l'UID via FirebaseAuth.currentUser.
 //      - Initialisation de RecipientService avec l'UID.
-//      - Adaptation de la logique d'appairage manuel (_showPasteLinkDialog) pour utiliser les UID et appeler _pairUsers (main.dart).
+//      - Adaptation de la logique d'appairage manuel (_showPasteLinkDialog) pour utiliser les UID et appeler pairUsers (main.dart).
 //      - Adaptation des appels à RecipientService (add/delete/update) pour utiliser les UID.
 //      - Adaptation de la navigation vers les écrans détaillés/édition/envoi pour passer l'UID du destinataire. - 2025/05/29
 // V014 - ajout du bloc descriptif des fonctionnalités principales - 2025/05/28 14h32 (Historique hérité)
@@ -39,7 +40,7 @@
 // V001 - version initiale - 2025/05/21 (Historique hérité)
 // -------------------------------------------------------------
 
-// GEM - Code corrigé par Gémini le 2025/05/30 // Mise à jour le 30/05
+// GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
 
 import 'package:flutter/material.dart';
 // Assurez-vous que cette ligne est bien présente et active :
@@ -206,11 +207,27 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
           TextButton(
             onPressed: () async {
               final input = controller.text.trim();
-              final uri = Uri.tryParse(input);
-              // Extraire l'UID de l'inviteur depuis le paramètre 'recipient' du lien
-              final String? recipientInviterUid = uri?.queryParameters['recipient'];
+              String? recipientInviterUid;
 
-              // Vérifier si l'UID extrait est valide
+              final uri = Uri.tryParse(input);
+              // Tente d'abord de parser comme une URL avec le paramètre 'recipient'
+              if (uri != null && uri.queryParameters.containsKey('recipient')) {
+                recipientInviterUid = uri.queryParameters['recipient'];
+                debugLog("➡️ [RecipientsScreen] Parsé comme URL d'invitation. UID: $recipientInviterUid", level: 'DEBUG');
+              } else {
+                // Si ce n'est pas une URL avec le paramètre, suppose que c'est l'UID pur qui a été collé
+                // Ajoute ici une validation basique pour vérifier que ça ressemble à un UID (longueur).
+                // Un UID Firebase a 28 caractères. Une marge de sécurité (20-40) est raisonnable.
+                if (input.length >= 20 && input.length <= 40) { // Assoupli la validation de longueur
+                  recipientInviterUid = input;
+                  debugLog("➡️ [RecipientsScreen] Parsé comme UID direct. UID: $recipientInviterUid", level: 'DEBUG');
+                } else {
+                  // Le texte collé ne ressemble ni à une URL valide avec paramètre, ni à un UID.
+                  debugLog("⚠️ [RecipientsScreen] Entrée invalide : ne ressemble pas à une URL d'invitation ou un UID valide.", level: 'WARNING');
+                }
+              }
+
+              // Vérifier si l'UID extrait/collé est valide et différent de l'UID de l'utilisateur actuel
               if (recipientInviterUid != null && recipientInviterUid.isNotEmpty && _currentUserId != recipientInviterUid) {
                 // Vérifier si l'utilisateur est déjà appairé avec cet UID
                 // On cherche dans la liste locale des destinataires si un Recipient avec cet ID/UID existe déjà.
@@ -224,14 +241,19 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                     ),
                   );
                   Navigator.of(context).pop(); // Ferme la boîte de dialogue
-                  return;
+                  return; // Sortir après le message "déjà appairé"
                 }
 
-                // Tenter l'appairage en utilisant la fonction _pairUsers de main.dart
-                // Passe l'UID de l'inviteur (extrait du lien) et l'UID de l'utilisateur actuel.
+
+                // Tenter l'appairage en utilisant la fonction pairUsers de main.dart
+                // Passe l'UID de l'inviteur (extrait de l'entrée) et l'UID de l'utilisateur actuel.
                 final String? pairedWithUid = await pairUsers(recipientInviterUid, _currentUserId!);
                 if (mounted) { // Vérifier si le widget est toujours monté après l'opération asynchrone
-                  Navigator.of(context).pop(); // Ferme la boîte de dialogue
+                  // Ne ferme la boîte de dialogue QUE si l'appairage a réussi ou s'il y a une erreur gérée APRES l'appel à pairUsers
+                  // Si pairUsers lance une exception non gérée ici, la boîte de dialogue restera ouverte,
+                  // ce qui peut être un comportement acceptable pour debugger.
+                  // Pour une meilleure UX, tu pourrais ajouter un try/catch autour de pairUsers
+                  // et gérer l'échec explicite (afficher un message d'erreur et fermer la boîte de dialogue).
 
                   if (pairedWithUid != null) {
                     // Si l'appairage a réussi, rafraîchir la liste des destinataires et afficher un message de succès
@@ -242,24 +264,34 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                         backgroundColor: Colors.green,
                       ),
                     );
+                    Navigator.of(context).pop(); // Ferme la boîte de dialogue UNIQUEMENT en cas de succès
                   } else {
-                    // Si l'appairage a échoué
+                    // Si pairUsers retourne null (indiquant un échec interne non-exceptionnel)
+                    debugLog("⚠️ [RecipientsScreen] pairUsers a retourné null. Échec de l'appairage.", level: 'WARNING');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(getUILabel('pairing_failed', widget.deviceLang)), // TODO: Add key for pairing failure
+                        content: Text(getUILabel('pairing_failed', widget.deviceLang)), // Utilise i18n_service
                         backgroundColor: Colors.red,
                       ),
                     );
+                    // Ne ferme pas la boîte de dialogue ici, laisse l'utilisateur corriger l'entrée si besoin,
+                    // ou tu peux choisir de la fermer : Navigator.of(context).pop();
                   }
                 }
               } else {
-                // Si le lien est invalide, l'UID est vide, ou l'auto-appairage est tenté
+                // Gérer l'erreur d'entrée invalide (UID null, vide, ou auto-appairage tenté)
+                final errorMessage = (_currentUserId == recipientInviterUid && recipientInviterUid != null && recipientInviterUid.isNotEmpty)
+                    ? getUILabel('cannot_pair_with_self', widget.deviceLang) // Utilise i18n_service
+                    : getUILabel('invalid_invite_code', widget.deviceLang); // Utilise i18n_service
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(getUILabel('invalid_invite_link', widget.deviceLang)), // Utilise i18n_service
+                    content: Text(errorMessage),
                     backgroundColor: Colors.red,
                   ),
                 );
+                // La boîte de dialogue reste ouverte pour permettre de corriger l'entrée.
+                // Si tu préfères la fermer, ajoute : Navigator.of(context).pop();
               }
             },
             child: Text(getUILabel('validate_button', widget.deviceLang), style: const TextStyle(color: Colors.pink)), // Utilise i18n_service

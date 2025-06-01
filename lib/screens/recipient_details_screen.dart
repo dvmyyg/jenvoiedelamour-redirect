@@ -1,6 +1,22 @@
-// lib/screens/recipient_details_screen.dart
-
-// Historique du fichier
+// -------------------------------------------------------------
+// 📄 FICHIER : lib/screens/recipient_details_screen.dart
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Écran de conversation (chat) avec un destinataire spécifique.
+// ✅ Affiche les messages échangés avec le destinataire en temps réel.
+// ✅ Permet d'envoyer de nouveaux messages texte au destinataire.
+// ✅ S'appuie sur FirebaseAuth.instance.currentUser pour l'UID de l'utilisateur actuel.
+// ✅ Utilise l'UID du destinataire (via Recipient.id) pour identifier l'interlocuteur.
+// ✅ Initialise et utilise MessageService avec les UID de l'utilisateur actuel et du destinataire.
+// ✅ Identifie les messages "envoyés par moi" en comparant msg.from avec l'UID de l'utilisateur actuel.
+// ✅ N'utilise plus deviceId pour l'identification ou la logique.
+// ✅ Utilise le modèle Message refactorisé avec UID from/to.
+// ✅ Affiche les messages sous forme de bulles avec indication d'heure.
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V009 - Code examiné par Gemini. Logique de chat basée sur les UID Firebase (utilisateur actuel et destinataire) confirmée comme fonctionnelle et bien implémentée avec MessageService. - 2025/05/31
 // V008 - Refactoring : Remplacement de deviceId par l'UID Firebase de l'utilisateur actuel et du destinataire.
 //      - Passage de l'UID de l'utilisateur actuel et de l'UID du destinataire (via Recipient.id) au MessageService refactorisé.
 //      - Utilisation de l'UID de l'utilisateur actuel pour identifier les messages envoyés.
@@ -12,8 +28,9 @@
 // V003 - suppression du bloc contact, refonte UI - 2025/05/23 18h20 (Historique hérité)
 // V002 - ajout navigation depuis RecipientScreen - 2025/05/22 12h30 (Historique hérité)
 // V001 - création écran fiche destinataire - 2025/05/21 (Historique hérité)
+// -------------------------------------------------------------
 
-// GEM - code corrigé par Gémini le 2025/05/29
+// GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Nécessaire pour obtenir l'UID de l'utilisateur actuel

@@ -1,14 +1,30 @@
-//  lib/screens/login_screen.dart
-
-// Historique du fichier
+// -------------------------------------------------------------
+// 📄 FICHIER : lib/screens/login_screen.dart
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Permet aux utilisateurs existants de se connecter avec email et mot de passe via Firebase Auth.
+// ✅ Gère la saisie de l'email et du mot de passe.
+// ✅ Gère les erreurs spécifiques de connexion Firebase Auth.
+// ✅ Affiche des indicateurs de chargement et des messages d'erreur.
+// ✅ Fournit un bouton pour naviguer vers l'écran d'inscription (RegisterScreen).
+// ✅ N'utilise plus deviceId pour l'identification ou les opérations Firebase.
+// ✅ S'appuie sur le flux d'authentification centralisé (main.dart) pour la navigation post-connexion réussie.
+// ✅ Utilise l'I18nService pour la traduction des textes de l'interface.
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V004 - Correction de l'action onPressed du bouton 'Créer un compte' pour utiliser Navigator.push et naviguer
+//        correctement vers RegisterScreen. Code refactorisé vers UID confirmé. - 2025/05/30
 // V003 - Refactoring : Suppression du paramètre deviceId. L'écran s'appuie sur FirebaseAuth pour la connexion.
-//      - Suppression de l'écriture obsolète dans devices/{deviceId} après connexion.
-//      - Utilisation potentielle de AuthService (si implémenté/préféré) pour la logique de connexion.
-//      - S'appuie sur main.dart pour la navigation après changement d'état d'auth. - 2025/05/29
-// V002 - ajout import cloud_firestore pour FirebaseFirestore & SetOptions - 2025/05/24 10h31 (Historique hérité)
-// V001 - version initiale (Historique hérité)
+//        Suppression de l'écriture obsolète dans devices/{deviceId}.
+//        S'appuie sur main.dart pour la navigation post-auth. - 2025/05/29
+// V002 - Ajout import cloud_firestore pour FirebaseFirestore & SetOptions (historique hérité). - 2025/05/24 10h31
+// V001 - Version initiale (historique hérité). - 2025/05/21
+// -------------------------------------------------------------
 
-// GEM - code corrigé par Gémini le 2025/05/29
+// GEM - Code corrigé par Gémini le 2025/05/30 // Mise à jour le 30/05
+
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Essentiel pour la connexion
@@ -218,10 +234,15 @@ class _LoginScreenState extends State<LoginScreen> {
             // Bouton pour naviguer vers la page d'inscription
             TextButton(
               onPressed: () {
-                // Navigue vers RegisterScreen. On ne passe PLUS deviceId.
-                RegisterScreen(
-                  deviceLang: widget.deviceLang,
-                  // deviceId: widget.deviceId, // <-- SUPPRIMÉ
+                // => CORRECTION : Utilise Navigator.push pour naviguer vers RegisterScreen
+                debugLog("➡️ [LoginScreen] Clic sur 'Créer un compte' - Navigation vers RegisterScreen", level: 'INFO'); // Ajout d'un log utile
+                Navigator.push( // C'est CETTE méthode qui déclenche la navigation
+                  context, // Le contexte du widget est nécessaire pour Navigator
+                  MaterialPageRoute( // Crée une nouvelle route d'écran
+                    builder: (context) => RegisterScreen( // Le builder construit l'écran de destination
+                      deviceLang: widget.deviceLang, // On passe le paramètre nécessaire (la langue)
+                    ),
+                  ),
                 );
               },
               child: Text(getUILabel('create_account_button', lang)), // Utilise i18n_service

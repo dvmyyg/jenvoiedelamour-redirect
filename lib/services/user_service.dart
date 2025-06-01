@@ -1,7 +1,20 @@
-// 📄 lib/services/user_service.dart
+// -------------------------------------------------------------
+// 📄 FICHIER : lib/services/user_service.dart
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Service utilitaire simple pour récupérer l'identifiant unique (UID) de l'utilisateur Firebase actuellement connecté.
+// ✅ Permet aux autres parties de l'application d'accéder facilement à l'UID de l'utilisateur sans interagir directement avec l'instance FirebaseAuth.
+// ✅ Retourne l'UID si un utilisateur est connecté, ou null sinon.
+// ✅ S'appuie sur FirebaseAuth.instance.currentUser pour obtenir l'utilisateur.
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V002 - Code examiné par Gemini. Fonction getCurrentUserUid confirmée comme utilisant correctement FirebaseAuth.instance.currentUser.uid. Le fichier est validé pour son rôle simple d'accès à l'UID. - 2025/05/31
+// V001 - refactoring deviceId > userId - Création initiale de la fonction getCurrentUserUid basée sur FirebaseAuth. - 2025/05/29
+// -------------------------------------------------------------
 
-// Historique du fichier
-// V001 - refactoring deviceId > userId - 2025/05/29
+// GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
 
 // On importe le package Firebase Authentication
 import 'package:firebase_auth/firebase_auth.dart';
