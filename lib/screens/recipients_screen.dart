@@ -11,9 +11,12 @@
 // ✅ Navigation → écran de chat/détail (RecipientDetailsScreen, passant l'UID du destinataire)
 // ✅ Textes traduits dynamiquement via getUILabel (i18n_service)
 // ✅ Chargement Firestore + appel à RecipientService (maintenant basés sur UID)
+// ✅ **Reçoit le rôle isReceiver de l'utilisateur actuel en paramètre.**
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V022 - remplacement de l’affichage linéaire des cartes par ContactsCarousel - 2025/06/06 18h48
+// V021 - Ajout du paramètre isReceiver au constructeur de RecipientsScreen. - 2025/06/03
 // V020 - Modification du bloc onPressed dans _showPasteLinkDialog pour accepter soit l'URL d'invitation (paramètre 'recipient'), soit l'UID Firebase pur, pour faciliter l'appairage manuel. Utilisation des nouvelles clés i18n pour les messages d'erreur. Code validé. - 2025/05/31
 // V019 - Correction de l'erreur d'exportation de '_pairUsers' en renommant la fonction en 'pairUsers' dans main.dart et en mettant à jour l'import et l'appel ici. - 2025/05/30
 // V018 - Correction de l'erreur Undefined name '_pairUsers' en décommentant l'import de main.dart. - 2025/05/30
@@ -43,40 +46,25 @@
 // GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
 
 import 'package:flutter/material.dart';
-// Assurez-vous que cette ligne est bien présente et active :
 import '../main.dart' show pairUsers; // Importe spécifiquement _pairUsers depuis main.dart
-
-// On avait besoin de cloud_firestore pour l'appairage manuel (_showPasteLinkDialog) - mais plus maintenant
-// l'import Cloud Firestore n'est plus utilisé ici, c'est _pairUsers qui s'en charge. Ce commentaire peut être mis à jour.
-// import 'package:cloud_firestore/cloud_firestore.dart'; // <-- Peut être commenté ou supprimé si non utilisé ailleurs dans ce fichier
-
-// Firebase Auth pour obtenir l'UID de l'utilisateur actuel
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/recipient_service.dart'; // Utilise le RecipientService refactorisé
 import '../models/recipient.dart'; // Utilise le modèle Recipient refactorisé (contient l'UID du destinataire dans .id)
-// On importe les écrans de navigation. Ils devront accepter l'UID du destinataire.
 import 'recipient_details_screen.dart';
 import 'edit_recipient_screen.dart';
-// import 'send_message_screen.dart';
 import 'add_recipient_screen.dart'; // Écran pour générer le lien d'invitation
-
 import '../services/i18n_service.dart'; // Pour les traductions
 import '../utils/debug_log.dart'; // Pour le logger
-
-// On supprime les imports qui ne sont plus utilisés dans ce fichier
-// import 'package:share_plus/share_plus.dart'; // Le partage est géré dans AddRecipientScreen
-
+import 'package:jelamvp01/widgets/contacts_carousel.dart';
 
 class RecipientsScreen extends StatefulWidget {
-  // Le deviceId n'est plus requis. L'identifiant de l'utilisateur actuel est son UID Firebase,
-  // obtenu via FirebaseAuth.instance.currentUser.
-  // final String deviceId; // <-- SUPPRIMÉ
   final String deviceLang; // La langue reste pertinente
+  final bool isReceiver; // Rôle de l'utilisateur ACTUEL (celui qui est sur cet écran)
 
   const RecipientsScreen({
     super.key,
-    // required this.deviceId, // <-- SUPPRIMÉ du constructeur
     required this.deviceLang,
+    required this.isReceiver, // Ce paramètre est requis
   });
 
   @override
@@ -88,9 +76,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
   late RecipientService _recipientService;
   List<Recipient> _recipients = []; // Liste des destinataires
 
-  // Stocke l'UID de l'utilisateur actuel une fois obtenu.
   String? _currentUserId;
-
 
   @override
   void initState() {
@@ -99,32 +85,26 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
     _currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     if (_currentUserId == null) {
-      // Gérer le cas où l'utilisateur n'est pas connecté (ne devrait pas arriver ici si main.dart redirige correctement)
+
       debugLog("⚠️ RecipientsScreen : Utilisateur non connecté. Ne peut pas charger les destinataires.", level: 'ERROR');
       // TODO: Afficher un message d'erreur ou rediriger vers la page de connexion.
-      // Si l'UID est null, on ne peut pas initialiser RecipientService ni charger la liste.
+
       return; // Sortir si l'UID n'est pas disponible
     }
 
-    // Initialiser le RecipientService refactorisé avec l'UID de l'utilisateur actuel
     _recipientService = RecipientService(_currentUserId!); // UID de l'utilisateur actuel (non null car vérifié au-dessus)
 
-    // Charger la liste des destinataires
     _loadRecipients();
   }
 
-  // Charge la liste des destinataires en utilisant RecipientService
   Future<void> _loadRecipients() async {
     if (_currentUserId == null) return; // Protection supplémentaire
 
-    // Utilise fetchRecipients du RecipientService refactorisé (qui lit depuis users/{uid}/recipients)
     final recipients = await _recipientService.fetchRecipients();
     setState(() => _recipients = recipients); // Met à jour l'état avec la nouvelle liste
     debugLog("✅ ${_recipients.length} destinataires chargés pour l'UID $_currentUserId", level: 'INFO');
   }
 
-  // Confirme et supprime un destinataire
-  // L'identifiant du destinataire est maintenant son UID Firebase (stocké dans recipient.id)
   Future<void> _confirmDeleteRecipient(Recipient recipientToDelete) async { // Reçoit l'objet Recipient pour accéder à son ID/UID
     if (_currentUserId == null) return; // Protection supplémentaire
 
@@ -148,24 +128,17 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
     );
 
     if (confirmed == true) {
-      // Appelle deleteRecipient du RecipientService refactorisé avec l'UID du destinataire
+
       await _recipientService.deleteRecipient(recipientToDelete.id); // recipientToDelete.id contient maintenant l'UID de l'autre utilisateur
       // TODO: Optionnel : Supprimer aussi le destinataire miroir chez l'autre utilisateur si cette logique est souhaitée.
-      // Cela nécessiterait d'utiliser RecipientService de l'autre utilisateur, ce qui est complexe ici.
-      // Une Cloud Function déclenchée par la suppression d'un côté serait plus robuste.
-      // Pour l'instant, la suppression est unilatérale (on supprime le destinataire chez soi).
 
       _loadRecipients(); // Recharge la liste après suppression
     }
   }
 
-  // Navigue vers l'écran AddRecipientScreen pour générer/partager le lien d'invitation.
-  // AddRecipientScreen gère maintenant l'obtention de l'UID et la génération du lien.
   void _goToAddRecipientScreen() async {
     if (_currentUserId == null) return; // Protection supplémentaire
 
-    // Navigue vers AddRecipientScreen. On ne passe PLUS deviceId.
-    // AddRecipientScreen obtiendra l'UID via FirebaseAuth.currentUser.
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -175,13 +148,10 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
         ),
       ),
     );
-    // Après être revenu de AddRecipientScreen (potentiellement après un partage), on peut rafraîchir la liste.
+
     _loadRecipients();
   }
 
-
-  // Affiche la boîte de dialogue pour coller un lien d'invitation et valider l'appairage manuel.
-  // Cette logique est adaptée pour utiliser les UID et appeler _pairUsers (dans main.dart).
   void _showPasteLinkDialog() {
     if (_currentUserId == null) return; // Protection supplémentaire
 
@@ -215,25 +185,21 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                 recipientInviterUid = uri.queryParameters['recipient'];
                 debugLog("➡️ [RecipientsScreen] Parsé comme URL d'invitation. UID: $recipientInviterUid", level: 'DEBUG');
               } else {
-                // Si ce n'est pas une URL avec le paramètre, suppose que c'est l'UID pur qui a été collé
-                // Ajoute ici une validation basique pour vérifier que ça ressemble à un UID (longueur).
-                // Un UID Firebase a 28 caractères. Une marge de sécurité (20-40) est raisonnable.
+
                 if (input.length >= 20 && input.length <= 40) { // Assoupli la validation de longueur
                   recipientInviterUid = input;
                   debugLog("➡️ [RecipientsScreen] Parsé comme UID direct. UID: $recipientInviterUid", level: 'DEBUG');
                 } else {
-                  // Le texte collé ne ressemble ni à une URL valide avec paramètre, ni à un UID.
+
                   debugLog("⚠️ [RecipientsScreen] Entrée invalide : ne ressemble pas à une URL d'invitation ou un UID valide.", level: 'WARNING');
                 }
               }
 
-              // Vérifier si l'UID extrait/collé est valide et différent de l'UID de l'utilisateur actuel
               if (recipientInviterUid != null && recipientInviterUid.isNotEmpty && _currentUserId != recipientInviterUid) {
-                // Vérifier si l'utilisateur est déjà appairé avec cet UID
-                // On cherche dans la liste locale des destinataires si un Recipient avec cet ID/UID existe déjà.
+
                 final alreadyPaired = _recipients.any((r) => r.id == recipientInviterUid); // r.id contient maintenant l'UID
                 if (alreadyPaired) {
-                  // Afficher un message si déjà appairé
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(getUILabel('already_paired', widget.deviceLang)), // Utilise i18n_service
@@ -244,19 +210,11 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                   return; // Sortir après le message "déjà appairé"
                 }
 
-
-                // Tenter l'appairage en utilisant la fonction pairUsers de main.dart
-                // Passe l'UID de l'inviteur (extrait de l'entrée) et l'UID de l'utilisateur actuel.
                 final String? pairedWithUid = await pairUsers(recipientInviterUid, _currentUserId!);
                 if (mounted) { // Vérifier si le widget est toujours monté après l'opération asynchrone
-                  // Ne ferme la boîte de dialogue QUE si l'appairage a réussi ou s'il y a une erreur gérée APRES l'appel à pairUsers
-                  // Si pairUsers lance une exception non gérée ici, la boîte de dialogue restera ouverte,
-                  // ce qui peut être un comportement acceptable pour debugger.
-                  // Pour une meilleure UX, tu pourrais ajouter un try/catch autour de pairUsers
-                  // et gérer l'échec explicite (afficher un message d'erreur et fermer la boîte de dialogue).
 
                   if (pairedWithUid != null) {
-                    // Si l'appairage a réussi, rafraîchir la liste des destinataires et afficher un message de succès
+
                     _loadRecipients(); // Recharge la liste pour inclure le nouveau destinataire
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -266,7 +224,7 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                     );
                     Navigator.of(context).pop(); // Ferme la boîte de dialogue UNIQUEMENT en cas de succès
                   } else {
-                    // Si pairUsers retourne null (indiquant un échec interne non-exceptionnel)
+
                     debugLog("⚠️ [RecipientsScreen] pairUsers a retourné null. Échec de l'appairage.", level: 'WARNING');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -274,12 +232,10 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                         backgroundColor: Colors.red,
                       ),
                     );
-                    // Ne ferme pas la boîte de dialogue ici, laisse l'utilisateur corriger l'entrée si besoin,
-                    // ou tu peux choisir de la fermer : Navigator.of(context).pop();
                   }
                 }
               } else {
-                // Gérer l'erreur d'entrée invalide (UID null, vide, ou auto-appairage tenté)
+
                 final errorMessage = (_currentUserId == recipientInviterUid && recipientInviterUid != null && recipientInviterUid.isNotEmpty)
                     ? getUILabel('cannot_pair_with_self', widget.deviceLang) // Utilise i18n_service
                     : getUILabel('invalid_invite_code', widget.deviceLang); // Utilise i18n_service
@@ -290,8 +246,6 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                     backgroundColor: Colors.red,
                   ),
                 );
-                // La boîte de dialogue reste ouverte pour permettre de corriger l'entrée.
-                // Si tu préfères la fermer, ajoute : Navigator.of(context).pop();
               }
             },
             child: Text(getUILabel('validate_button', widget.deviceLang), style: const TextStyle(color: Colors.pink)), // Utilise i18n_service
@@ -301,25 +255,18 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
     );
   }
 
-  // Navigue vers l'écran d'édition d'un destinataire
-  // Passe l'objet Recipient sélectionné (dont l'ID est l'UID du destinataire)
   void _editRecipient(Recipient r) { // Prend l'objet Recipient en paramètre
     if (_currentUserId == null) return; // Protection supplémentaire
 
-    // Navigue vers EditRecipientScreen.
-    // On lui passe l'objet Recipient (qui contient l'UID du destinataire dans r.id) et la langue.
-    // EditRecipientScreen obtiendra l'UID de l'utilisateur actuel via FirebaseAuth.
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => EditRecipientScreen(
-          // deviceId: widget.deviceId, // <-- SUPPRIMÉ
           deviceLang: widget.deviceLang, // La langue est toujours passée
           recipient: r, // Passe l'objet Recipient refactorisé
         ),
       ),
     ).then((result) {
-      // Si EditRecipientScreen retourne true (après une sauvegarde)
       if (result == true) {
         _loadRecipients(); // Recharge la liste pour refléter les changements potentiels (nom, relation, icône)
       }
@@ -328,8 +275,6 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Vérification si l'UID de l'utilisateur actuel est disponible.
-    // Si non, on affiche un indicateur ou un message d'erreur car on ne peut pas charger la liste.
     if (_currentUserId == null) {
       return Scaffold(
         backgroundColor: Colors.black,
@@ -344,9 +289,6 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
       );
     }
 
-
-    // L'UI principale affiche la liste des destinataires avec les boutons d'action.
-    // Elle utilise _recipientService initialisé avec l'UID pour charger la liste.
     return Scaffold(
       appBar: AppBar(
         title: Text(getUILabel('recipients_title', widget.deviceLang)), // Utilise i18n_service
@@ -356,7 +298,6 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
       backgroundColor: Colors.black,
       body: ListView(
         children: [
-          // Bouton "Inviter quelqu’un"
           GestureDetector(
             onTap: _goToAddRecipientScreen, // Appelle la navigation refactorisée
             child: Padding(
@@ -416,16 +357,13 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                   IconButton(
                     icon: const Icon(Icons.chat, color: Colors.white70), // Icône de chat
                     onPressed: () {
-                      // Navigue vers RecipientDetailsScreen (chat)
-                      // Passe l'objet Recipient (qui contient l'UID du destinataire dans r.id) et la langue.
-                      // RecipientDetailsScreen obtiendra l'UID de l'utilisateur actuel via FirebaseAuth.
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => RecipientDetailsScreen(
-                            // deviceId: widget.deviceId, // <-- SUPPRIMÉ
                             deviceLang: widget.deviceLang, // La langue est toujours passée
                             recipient: r, // Passe l'objet Recipient refactorisé
+                            isReceiver: widget.isReceiver, // Passe le rôle isReceiver de l'utilisateur ACTUEL (disponible via widget)
                           ),
                         ),
                       );
@@ -442,3 +380,14 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
     );
   }
 } // <-- Fin de la classe _RecipientsScreenState et de la classe RecipientsScreen
+
+// 🔁 Affichage par carrousel ajouté
+Expanded(
+child: ContactsCarousel(
+cards: recipients.map((recipient) {
+return _buildRecipientCard(context, recipient);
+}).toList(),
+),
+),
+
+// 📄 FIN de lib/screens/recipients_screen.dart
