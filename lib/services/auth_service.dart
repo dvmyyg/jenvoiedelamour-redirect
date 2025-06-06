@@ -84,3 +84,5 @@ class AuthService {
     return status;
   }
 }
+
+// 📄 FIN de lib/services/auth_service.dart

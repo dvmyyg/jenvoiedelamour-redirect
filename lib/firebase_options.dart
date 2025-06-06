@@ -75,3 +75,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'jelamvp01.appspot.com',
   );
 }
+
+// 📄 FIN de lib/firebase_options.dart

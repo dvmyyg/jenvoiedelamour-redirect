@@ -359,5 +359,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return input[0].toUpperCase() + input.substring(1).toLowerCase();
   }
 
-
 } // <-- Fin de la classe _SettingsScreenState et de la classe SettingsScreen
+
+// 📄 FIN de lib/screens/settings_screen.dart

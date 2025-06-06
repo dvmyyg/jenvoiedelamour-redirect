@@ -411,3 +411,5 @@ class _ProfileScreenState extends State<ProfileScreen> {
 // TODO: Pensez à supprimer la classe ProfileScreen si elle n'est pas utilisée ailleurs (c'est un StatefulWidget, donc elle a sa classe State associée)
 
 // TODO: S'assurer que ProfileScreen n'est pas appelé avec un deviceId n'importe où.
+
+// 📄 FIN de lib/screens/profile_screen.dart

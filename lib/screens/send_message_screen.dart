@@ -268,3 +268,4 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
     );
   }
 }
+// 📄 FIN de lib/screens/send_message_screen.dart

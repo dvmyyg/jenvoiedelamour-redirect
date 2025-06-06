@@ -408,3 +408,5 @@ String getPreviewText(String type, String langCode) {
       }[langCode] ?? 'My heart 💖';
   }
 }
+
+// FIN de lib/services/i18n_service.dart

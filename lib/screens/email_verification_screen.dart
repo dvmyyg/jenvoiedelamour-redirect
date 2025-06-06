@@ -260,3 +260,4 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     );
   }
 }
+// 📄 FIN de lib/screens/email_verification_screen.dart

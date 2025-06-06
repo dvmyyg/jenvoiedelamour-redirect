@@ -593,3 +593,5 @@ class FirestoreService {
    */
 
 } // <-- Fin de la classe FirestoreService et de la classe FirestoreService
+
+// 📄 FIN de lib/services/firestore_service.dart

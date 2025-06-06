@@ -113,3 +113,4 @@ class Message {
 //   );
 // }
 }
+// 📄 FIN de lib/models/message.dart

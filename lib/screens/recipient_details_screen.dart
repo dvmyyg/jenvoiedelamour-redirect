@@ -13,9 +13,13 @@
 // ✅ N'utilise plus deviceId pour l'identification ou la logique.
 // ✅ Utilise le modèle Message refactorisé avec UID from/to.
 // ✅ Affiche les messages sous forme de bulles avec indication d'heure.
+// ✅ Implémente un scroll automatique intelligent : scroll vers le bas seulement si de nouveaux messages arrivent ET que l'utilisateur était déjà en bas de la liste.
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V012 - Ajout de la logique de scroll conditionnel intelligent dans le StreamBuilder du chat, en utilisant ScrollController pour détecter la position de l'utilisateur et scroller si nécessaire à l'arrivée de nouveaux messages. - 2025/06/01
+// V011 - Déclaration et libération du ScrollController dans la classe d'état et la méthode dispose. - 2025/06/01
+// V010 - Ajout d'un ScrollController et de la logique dans le StreamBuilder pour implémenter le scroll automatique intelligent (scroll vers le bas si nouveaux messages et utilisateur en bas). - 2025/06/01 (Modifications partielles dans V011 et V012)
 // V009 - Code examiné par Gemini. Logique de chat basée sur les UID Firebase (utilisateur actuel et destinataire) confirmée comme fonctionnelle et bien implémentée avec MessageService. - 2025/05/31
 // V008 - Refactoring : Remplacement de deviceId par l'UID Firebase de l'utilisateur actuel et du destinataire.
 //      - Passage de l'UID de l'utilisateur actuel et de l'UID du destinataire (via Recipient.id) au MessageService refactorisé.
@@ -30,7 +34,7 @@
 // V001 - création écran fiche destinataire - 2025/05/21 (Historique hérité)
 // -------------------------------------------------------------
 
-// GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
+// GEM - code corrigé par Gémini le 2025/06/01 // Mise à jour le 01/06
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Nécessaire pour obtenir l'UID de l'utilisateur actuel
@@ -43,18 +47,15 @@ import 'package:intl/intl.dart'; // Pour le formatage de la date/heure
 import 'package:cloud_firestore/cloud_firestore.dart'; // Pour Timestamp
 
 class RecipientDetailsScreen extends StatefulWidget {
-  // Le deviceId n'est plus requis. L'identifiant de l'utilisateur actuel est son UID Firebase,
-  // obtenu via FirebaseAuth.instance.currentUser.
-  // final String deviceId; // <-- SUPPRIMÉ
   final String deviceLang; // La langue reste pertinente
-  // Le destinataire de la conversation. Son champ 'id' doit contenir l'UID Firebase de l'autre utilisateur.
   final Recipient recipient; // Cet objet Recipient doit avoir l'UID du destinataire dans son champ 'id'
+  final bool isReceiver; // Rôle de l'utilisateur ACTUEL (celui qui est sur cet écran)
 
   const RecipientDetailsScreen({
     super.key,
-    // required this.deviceId, // <-- SUPPRIMÉ du constructeur
     required this.deviceLang,
     required this.recipient,
+    required this.isReceiver, // Ce paramètre est requis
   });
 
   @override
@@ -68,6 +69,9 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
 
   // Stocke l'UID de l'utilisateur actuel une fois obtenu.
   String? _currentUserId;
+
+  // Contrôleur pour gérer le défilement de la liste de messages
+  final ScrollController _scrollController = ScrollController(); // <-- AJOUTEZ CETTE LIGNE
 
   @override
   void initState() {
@@ -98,9 +102,9 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose(); // <-- AJOUTEZ CETTE LIGNE
     super.dispose();
   }
-
 
   // Gère l'envoi d'un message texte
   void _sendMessage() {
@@ -175,7 +179,56 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 final messages = snapshot.data!;
+                // Code pour la logique de scroll automatique intelligent
+                // Vérifie si le contrôleur de scroll est attaché à la ListView et s'il y a des messages.
+                // S'il y a des messages ET que le contrôleur est attaché,
+                // on vérifie si l'utilisateur était déjà en bas AVANT le rendu de la nouvelle liste.
+                bool wasAtBottom = false;
+                if (_scrollController.hasClients && messages.isNotEmpty) {
+                  // Calcule la position actuelle et la position maximale de scroll.
+                  final double currentScrollPosition = _scrollController.position.pixels;
+                  final double maxScrollPosition = _scrollController.position.maxScrollExtent;
+
+                  // Définit une petite tolérance. Être "en bas" signifie être proche de la position maximale.
+                  // La tolérance est utile car parfois, la position exacte n'est pas égale au maxExtent
+                  // en raison de la manière dont Flutter calcule les layouts.
+                  final double tolerance = 50.0; // Tolérance en pixels (ajustez si nécessaire)
+
+                  // Détermine si l'utilisateur était "en bas" avant que cette mise à jour n'arrive.
+                  wasAtBottom = currentScrollPosition >= maxScrollPosition - tolerance;
+
+                  // debugLog("Scroll check: current=$currentScrollPosition, max=$maxScrollPosition, wasAtBottom=$wasAtBottom", level: 'DEBUG');
+                } else if (!_scrollController.hasClients) {
+                  // Si la ListView n'a pas encore été rendue (premier build), on suppose qu'on doit scroller en bas.
+                  // Cela couvre le cas où la conversation s'ouvre et il y a déjà des messages.
+                  wasAtBottom = true;
+                  // debugLog("Scroll check: no clients yet, assuming at bottom (initial build)");
+                }
+
+
+                // Si de nouveaux messages sont arrivés (on le sait car le StreamBuilder s'est mis à jour)
+                // ET que l'utilisateur était en bas (ou si c'est le premier chargement),
+                // on planifie le scroll vers le bas APRÈS que le nouveau rendu ait été effectué.
+                // On utilise addPostFrameCallback pour s'assurer que la ListView est bien mise à jour
+                // avec les nouveaux messages et que maxScrollExtent est correct AVANT de scroller.
+                if (messages.isNotEmpty && wasAtBottom) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    // Vérifie à nouveau si le contrôleur a toujours des clients avant de tenter de scroller
+                    if (_scrollController.hasClients) {
+                      _scrollController.animateTo(
+                        _scrollController.position.maxScrollExtent, // Scroll jusqu'à la position maximale (tout en bas)
+                        duration: const Duration(milliseconds: 300), // Durée de l'animation (300ms)
+                        curve: Curves.easeOut, // Courbe d'animation (ralentit vers la fin)
+                      );
+                      // debugLog("Scrolling to bottom due to new messages and wasAtBottom");
+                    }
+                  });
+                }
+                // Fin du code pour la logique de scroll automatique intelligent
+
+                // Build the ListView.builder
                 return ListView.builder(
+                  controller: _scrollController, // <-- AJOUTEZ CETTE LIGNE EXACTEMENT ICI
                   padding: const EdgeInsets.all(16),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
@@ -209,7 +262,7 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
                       ),
                     );
                   },
-                );
+                ); // <-- End of ListView.builder
               },
             ),
           ),
@@ -244,3 +297,4 @@ class _RecipientDetailsScreenState extends State<RecipientDetailsScreen> {
     );
   }
 }
+// 📄 FIN de lib/screens/recipient_details_screen.dart

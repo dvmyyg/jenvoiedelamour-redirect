@@ -1,5 +1,23 @@
-// android/app/build.gradle.kts
-// Ce fichier configure la compilation de l’app Flutter et la signature APK release
+// -------------------------------------------------------------
+// 📄 FICHIER : android/app/build.gradle.kts
+// -------------------------------------------------------------
+// 🧹 FONCTIONNALITÉS PRINCIPALES
+// -------------------------------------------------------------
+// ✅ Configure la compilation de l’app Flutter et la signature APK release.
+// ✅ Définit les versions SDK, le namespace, les options de compilation, et les toolchains Java/Kotlin.
+// ✅ Gère la configuration de signature pour les builds release.
+// ✅ Déclare les dépendances pour les bibliothèques essentielles, y compris Firebase via la BOM.
+// ✅ **Configuration Gradle pour Firebase Cloud Messaging (application du plugin google-services et dépendance firebase-messaging) validée.**
+// -------------------------------------------------------------
+// 🕓 HISTORIQUE DES MODIFICATIONS
+// -------------------------------------------------------------
+// V001 - Support intent://jela.app/open - 2025/05/24 15h20 (Historique hérité)
+// V002 - Ajout support pour app://jela - 2025/05/25 19h42 (Historique hérité)
+// V003 - Ajout/validation configuration Gradle pour FCM (plugin google-services et dépendance firebase-messaging). - 2025/06/04 // Mise à jour le 04/06
+// -------------------------------------------------------------
+
+// GEM - Code vérifié et historique mis à jour par Gémini le 2025/06/04 // Mise à jour le 04/06
+
 
 plugins {
     id("com.android.application")
@@ -95,3 +113,5 @@ java {
 kotlin {
     jvmToolchain(21)
 }
+
+// 📄 FIN de android/app/build.gradle.kts

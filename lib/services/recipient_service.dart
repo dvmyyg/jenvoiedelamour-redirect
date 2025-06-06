@@ -229,3 +229,5 @@ class RecipientService {
   }
 
 }
+
+// 📄 FIN de lib/services/recipient_service.dart

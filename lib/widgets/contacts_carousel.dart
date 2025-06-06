@@ -12,11 +12,13 @@
 // ✅ Intégrable directement dans HomeScreen ou autre écran
 // ✅ Supporte le défilement infini (infinite looping).
 // ✅ Correction du warning 'withOpacity' deprecated en utilisant 'withAlpha'.
-// ✅ **Syntaxe du constructeur mise à jour (super parameters).** // <-- NOUVEAU
+// ✅ Syntaxe du constructeur mise à jour (super parameters).
+// ✅ Permet de spécifier la hauteur des éléments (itemExtent). // <-- NOUVEAU
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
-// V006 - Passage à la syntaxe super parameters pour le paramètre 'key' du constructeur. - 2025/06/06 20h25 // <-- NOUVELLE ENTRÉE
+// V007 - Ajout du paramètre itemExtent au constructeur pour une hauteur d'élément configurable. - 2025/06/06 20h35 // <-- NOUVELLE ENTRÉE
+// V006 - Passage à la syntaxe super parameters pour le paramètre 'key' du constructeur. - 2025/06/06 20h25 (Historique conservé)
 // V005 - Correction du warning 'withOpacity' en remplaçant par 'withAlpha(51)'. - 2025/06/06 20h15 (Historique conservé)
 // V004 - Ajout du défilement infini (infinite looping) - 2025/06/06 20h00 (Historique conservé)
 // V003 - ajout d’un léger zoom (1.08) sur la carte centrale - 2025/06/06 19h28 (Historique conservé)
@@ -30,11 +32,14 @@ import 'package:flutter/material.dart';
 
 class ContactsCarousel extends StatefulWidget {
   final List<Widget> cards;
+  // AJOUTE LE PARAMÈTRE POUR LA HAUTEUR DES ÉLÉMENTS
+  final double itemExtent;
 
-  // 🎯 CORRECTION ICI : Utilisation de super.key
+
   const ContactsCarousel({
-    super.key, // Remplacement de 'Key? key,' et suppression de ': super(key: key)'
+    super.key,
     required this.cards,
+    required this.itemExtent, // REND itemExtent OBLIGATOIRE
   });
 
   @override
@@ -91,13 +96,13 @@ class _ContactsCarouselState extends State<ContactsCarousel> {
 
     return ListWheelScrollView.useDelegate(
       controller: _controller,
-      itemExtent: 220,
+      // UTILISE LE PARAMÈTRE itemExtent PASSÉ AU WIDGET
+      itemExtent: widget.itemExtent,
       perspective: 0.003,
       diameterRatio: 2.2,
       useMagnifier: true,
       magnification: 1.05,
       physics: const FixedExtentScrollPhysics(),
-      // onSelectedItemChanged est retiré car la logique est gérée par le Listener du controller
       childDelegate: ListWheelChildBuilderDelegate(
         childCount: infiniteChildCount,
         builder: (context, index) {
@@ -107,7 +112,7 @@ class _ContactsCarouselState extends State<ContactsCarousel> {
           final isSelected = realIndex == _realSelectedIndex;
 
           return Transform.scale(
-            scale: isSelected ? 1.08 : 1.0,
+            scale: isSelected ? 1.08 : 1.0, // 🎯 Reprise ici
             child: ColorFiltered(
               colorFilter: ColorFilter.mode(
                 // Correction : Remplacement de withOpacity(0.2) par withAlpha(51)

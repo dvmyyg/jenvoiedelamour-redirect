@@ -45,12 +45,8 @@ app.*.map.json
 /android/app/release
 
 # === Flutter & Dart specifics ===
-.dart_tool/
 .packages
-.pub/
 build/
-.flutter-plugins
-.flutter-plugins-dependencies
 .flutter-versions
 
 # === VS Code ===
@@ -69,7 +65,6 @@ ios/.flutter-plugins-dependencies
 ios/.generated/
 
 # === Logs ===
-*.log
 *.hprof
 
 # Ignorer les anciens APK et les archives HTML/Dart
@@ -78,3 +73,5 @@ apk/app-release_*.apk
 archives/
 lib/**/_archives/
 
+# Firebase Functions (Node.js)
+functions/node_modules/

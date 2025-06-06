@@ -103,25 +103,17 @@ exports.sendNotificationOnMessage = onDocumentCreated(
     // 'notification' est utilisé par le système d'exploitation pour afficher la notif.
     // 'data' est passé directement à l'application pour un traitement personnalisé.
     const payload = {
-      notification: {
-        title: `Nouveau message de ${senderName}`, // Titre de la notification visible par l'utilisateur
-        body: messageText ? (messageText.length > 150 ? messageText.substring(0, 147) + '...' : messageText) : 'Vous avez reçu un nouveau contenu.', // Corps de la notification, tronqué si trop long
-        // Tu peux ajouter d'autres champs 'notification' ici (ex: 'sound', 'badge', 'icon').
-        // icon: ... // Chemin vers une petite icône (drawable Android)
-        // color: ... // Couleur d'accentuation pour l'icône/notif Android
-      },
-      // Le champ 'data' est crucial pour passer des infos à ton application Flutter.
-      // L'application utilisera ces données pour, par exemple, naviguer vers la bonne conversation.
       data: {
-        // IMPORTANT: Les valeurs dans le champ 'data' DOIVENT être des chaînes de caractères.
+        title: `Nouveau message de ${senderName}`,
+        body: messageText
+          ? (messageText.length > 150 ? messageText.substring(0, 147) + '...' : messageText)
+          : 'Vous avez reçu un nouveau contenu.',
         senderId: senderId,
-        recipientId: recipientId, // C'est l'UID de l'utilisateur qui reçoit la notif (l'utilisateur actuel)
-        messageId: messageId, // L'ID du message qui a déclenché la notif
-        messageType: (newMessageData.type || 'text').toString(), // Assure-toi que c'est une string
-        // Tu peux ajouter d'autres données du message si nécessaire, en t'assurant qu'elles sont des strings.
-      },
+        recipientId: recipientId,
+        messageId: messageId,
+        messageType: (newMessageData.type || 'text').toString()
+      }
     };
-
 
     // --- 3. Envoyer la notification via FCM ---
     try {

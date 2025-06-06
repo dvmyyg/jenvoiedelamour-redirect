@@ -50,3 +50,5 @@ Future<String?> getCurrentUserUid() async { // Le type de retour est maintenant 
 // TODO: Ajoutez ici d'autres fonctions liées à l'utilisateur si nécessaire,
 // comme signInWithEmailPassword, signUpWithEmailPassword, signOut,
 // ou un stream pour écouter les changements d'état d'authentification.
+
+// 📄 FIN de lib/services/user_service.dart

@@ -346,3 +346,5 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
 // TODO: S'assurer que RegisterScreen n'est pas appelé avec un deviceId n'importe où dans l'application.
 // Vérifier tous les appels à RegisterScreen(...) et retirer le paramètre deviceId s'il est présent.
+
+// 📄 FIN de lib/screens/register_screen.dart

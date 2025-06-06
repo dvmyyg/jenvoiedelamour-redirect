@@ -21,6 +21,8 @@
 
 // GEM - code corrigé par Gémini le 2025/05/29
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Recipient {
   // L'identifiant de ce destinataire. Après refactoring, c'est l'UID Firebase de l'autre utilisateur.
   final String id;
@@ -28,30 +30,27 @@ class Recipient {
   final String displayName;
   final String icon;
   final String relation;
-  // L'ancien champ 'deviceId' est supprimé car l'ID du document (stocké dans 'id') est maintenant l'UID Firebase
-  // final String deviceId; // <-- ANCIEN CHAMP SUPPRIMÉ
   final List<String> allowedPacks;
   final bool paired;
   final String catalogType;
+  final Timestamp? createdAt; // ⭐️ AJOUTER LA DÉCLARATION DU CHAMP ICI
 
   Recipient({
     required this.id, // <-- ID (qui sera l'UID Firebase)
     required this.displayName,
     required this.icon,
     required this.relation,
-    // required this.deviceId, // <-- SUPPRIMÉ DU CONSTRUCTEUR
     required this.allowedPacks,
     required this.paired,
     this.catalogType = 'partner',
+    this.createdAt, // ⭐️ AJOUTER LE PARAMÈTRE AU CONSTRUCTEUR ICI
   });
 
-  // Méthode copyWith mise à jour (sans le champ deviceId)
   Recipient copyWith({
     String? id,
     String? displayName,
     String? icon,
     String? relation,
-    // String? deviceId, // <-- SUPPRIMÉ DE copyWith
     List<String>? allowedPacks,
     bool? paired,
     String? catalogType,
@@ -61,7 +60,6 @@ class Recipient {
       displayName: displayName ?? this.displayName,
       icon: icon ?? this.icon,
       relation: relation ?? this.relation,
-      // deviceId: deviceId ?? this.deviceId, // <-- SUPPRIMÉ DE copyWith
       allowedPacks: allowedPacks ?? this.allowedPacks,
       paired: paired ?? this.paired,
       catalogType: catalogType ?? this.catalogType,
@@ -76,8 +74,6 @@ class Recipient {
       displayName: data['displayName'] ?? '',
       icon: data['icon'] ?? '',
       relation: data['relation'] ?? '',
-      // L'ancien champ 'deviceId' n'est plus lu depuis Firestore
-      // deviceId: data['deviceId'] ?? '', // <-- SUPPRIMÉ DE fromMap
       allowedPacks: List<String>.from(data['allowedPacks'] ?? []),
       paired: data['paired'] ?? false,
       catalogType: data['catalogType'] ?? 'partner',
@@ -90,11 +86,10 @@ class Recipient {
       'displayName': displayName,
       'icon': icon,
       'relation': relation,
-      // L'ancien champ 'deviceId' n'est plus écrit dans Firestore
-      // 'deviceId': deviceId, // <-- SUPPRIMÉ DE toMap
       'allowedPacks': allowedPacks,
       'paired': paired,
       'catalogType': catalogType,
     };
   }
 }
+// 📄 FIN de lib/models/recipient.dart

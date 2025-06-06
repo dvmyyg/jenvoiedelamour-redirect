@@ -174,3 +174,4 @@ class ChatScreen extends StatelessWidget {
     );
   }
 }
+// 📄 FIN de lib/screens/chat_screen.dart
