@@ -12,9 +12,11 @@
 // ✅ Textes traduits dynamiquement via getUILabel (i18n_service)
 // ✅ Chargement Firestore + appel à RecipientService (maintenant basés sur UID)
 // ✅ **Reçoit le rôle isReceiver de l'utilisateur actuel en paramètre.**
+// ✅ **Utilise ContactsCarousel pour afficher les destinataires avec un effet visuel de carrousel vertical.** // <-- NOUVEAU TEXTE
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V023 - intégration du widget ContactsCarousel pour l'affichage de la liste des destinataires - 2025/06/06 20h00 // <-- NOUVELLE ENTRÉE
 // V022 - remplacement de l’affichage linéaire des cartes par ContactsCarousel - 2025/06/06 18h48
 // V021 - Ajout du paramètre isReceiver au constructeur de RecipientsScreen. - 2025/06/03
 // V020 - Modification du bloc onPressed dans _showPasteLinkDialog pour accepter soit l'URL d'invitation (paramètre 'recipient'), soit l'UID Firebase pur, pour faciliter l'appairage manuel. Utilisation des nouvelles clés i18n pour les messages d'erreur. Code validé. - 2025/05/31
@@ -43,7 +45,7 @@
 // V001 - version initiale - 2025/05/21 (Historique hérité)
 // -------------------------------------------------------------
 
-// GEM - code corrigé par Gémini le 2025/05/31 // Mise à jour le 31/05
+// GEM - code corrigé par Gémini le 2025/06/06 // Mise à jour le 06/06
 
 import 'package:flutter/material.dart';
 import '../main.dart' show pairUsers; // Importe spécifiquement _pairUsers depuis main.dart
@@ -289,17 +291,81 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
       );
     }
 
+    // --- 1. On génère la liste de widgets (ListTiles) pour le carrousel ---
+    // Cette liste contiendra les ListTiles représentant chaque destinataire.
+    // La logique de onTap pour ouvrir la messagerie est déjà dans la ListTile.
+    // La logique d'édition et de suppression est dans les IconButtons de la ListTile.
+    final List<Widget> recipientTiles = _recipients.map((r) {
+      // On crée la ListTile pour chaque destinataire 'r'
+      return ListTile(
+        leading: Text(r.icon, style: const TextStyle(fontSize: 24)),
+        title: Text(r.displayName, style: const TextStyle(color: Colors.white)),
+        subtitle: Text(getUILabel(r.relation, widget.deviceLang), style: const TextStyle(color: Colors.white70)),
+        trailing: Wrap(
+          spacing: 12,
+          children: [
+            // Bouton d'édition
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white70),
+              onPressed: () => _editRecipient(r),
+            ),
+            // Bouton de suppression
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.redAccent),
+              onPressed: () => _confirmDeleteRecipient(r),
+            ),
+            // Bouton de chat
+            IconButton(
+              icon: const Icon(Icons.chat, color: Colors.white70),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RecipientDetailsScreen(
+                      deviceLang: widget.deviceLang,
+                      recipient: r,
+                      isReceiver: widget.isReceiver,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        // 💡 IMPORANT : C'est ici que se trouve l'action par défaut de la "carte centrale"
+        // Quand cette ListTile est au centre du carrousel et qu'on tape dessus,
+        // CETTE fonction onTap sera appelée. Cela correspond à ton besoin
+        // de garder le comportement existant (ouvrir la messagerie).
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RecipientDetailsScreen(
+                deviceLang: widget.deviceLang,
+                recipient: r,
+                isReceiver: widget.isReceiver,
+              ),
+            ),
+          );
+        },
+      );
+    }).toList(); // Convertit l'Iterable en List<Widget>
+
+
+    // --- 2. On ajuste la structure du body ---
     return Scaffold(
       appBar: AppBar(
-        title: Text(getUILabel('recipients_title', widget.deviceLang)), // Utilise i18n_service
+        title: Text(getUILabel('recipients_title', widget.deviceLang)),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
       backgroundColor: Colors.black,
-      body: ListView(
+      body: Column( // 🎯 REMPLACE ICI ListView() par Column()
+        crossAxisAlignment: CrossAxisAlignment.start, // Alignement à gauche pour les boutons
         children: [
-          GestureDetector(
-            onTap: _goToAddRecipientScreen, // Appelle la navigation refactorisée
+          // Boutons "Inviter quelqu'un" et "Valider une invitation" restent en haut
+          GestureDetector( // Bouton Inviter
+            onTap: _goToAddRecipientScreen,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
@@ -310,14 +376,13 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                     child: Icon(Icons.add, size: 20, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
-                  Text(getUILabel('invite_someone_button', widget.deviceLang), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), // Utilise i18n_service
+                  Text(getUILabel('invite_someone_button', widget.deviceLang), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
           ),
-          // Bouton "Valider une invitation"
-          GestureDetector(
-            onTap: _showPasteLinkDialog, // Appelle la boîte de dialogue refactorisée pour appairage manuel
+          GestureDetector( // Bouton Valider une invitation
+            onTap: _showPasteLinkDialog,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: Row(
@@ -328,66 +393,28 @@ class _RecipientsScreenState extends State<RecipientsScreen> {
                     child: Icon(Icons.link, size: 20, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
-                  Text(getUILabel('validate_invite_button', widget.deviceLang), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), // Utilise i18n_service
+                  Text(getUILabel('validate_invite_button', widget.deviceLang), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
           ),
-          const Divider(color: Colors.white24),
-          // Liste des destinataires
-          ..._recipients.map((r) { // _recipients contient des objets Recipient refactorisés (ID = UID)
-            return ListTile(
-              leading: Text(r.icon, style: const TextStyle(fontSize: 24)), // Utilise les données du modèle Recipient
-              title: Text(r.displayName, style: const TextStyle(color: Colors.white)), // Utilise les données du modèle Recipient
-              subtitle: Text(getUILabel(r.relation, widget.deviceLang), style: const TextStyle(color: Colors.white70)), // Utilise les données du modèle Recipient et i18n_service
-              trailing: Wrap(
-                spacing: 12,
-                children: [
-                  // Bouton d'édition
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white70),
-                    onPressed: () => _editRecipient(r), // Appelle la méthode d'édition refactorisée (passe l'objet Recipient)
-                  ),
-                  // Bouton de suppression
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.redAccent),
-                    onPressed: () => _confirmDeleteRecipient(r), // Appelle la méthode de suppression refactorisée (passe l'objet Recipient)
-                  ),
-                  // TODO: Optionnel : Bouton pour accéder directement au chat depuis la liste ?
-                  IconButton(
-                    icon: const Icon(Icons.chat, color: Colors.white70), // Icône de chat
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => RecipientDetailsScreen(
-                            deviceLang: widget.deviceLang, // La langue est toujours passée
-                            recipient: r, // Passe l'objet Recipient refactorisé
-                            isReceiver: widget.isReceiver, // Passe le rôle isReceiver de l'utilisateur ACTUEL (disponible via widget)
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+          const Divider(color: Colors.white24), // Séparateur
+
+          // --- 3. On insère le ContactsCarousel dans un Expanded ---
+          // Expanded permet au carrousel de prendre toute la hauteur restante disponible
+          Expanded( // 🎯 AJOUTE Expanded
+            child: Center( // Optionnel: Centrer le carrousel
+              child: ContactsCarousel( // 🎯 AJOUTE TON WIDGET ContactsCarousel
+                cards: recipientTiles, // On passe la liste de ListTiles générées ici (variable créée à l'Étape 2)
               ),
-              // L'action onTap sur l'élément de liste pourrait aussi naviguer vers le chat
-              // onTap: () { /* naviguer vers RecipientDetailsScreen(recipient: r, deviceLang: widget.deviceLang) */ },
-            );
-          }), // Suppression de .toList()
-        ],
-      ),
-    );
+            ),
+          ),
+          // ❌ SUPPRIME ICI L'ANCIEN CODE : ..._recipients.map((r) { ... })...
+          // qui se trouvait avant la fin de la ListView
+        ], // Fin des children de la Column
+      ), // 🎯 FIN DE LA Column
+    ); // Fin du Scaffold
   }
 } // <-- Fin de la classe _RecipientsScreenState et de la classe RecipientsScreen
-
-// 🔁 Affichage par carrousel ajouté
-Expanded(
-child: ContactsCarousel(
-cards: recipients.map((recipient) {
-return _buildRecipientCard(context, recipient);
-}).toList(),
-),
-),
 
 // 📄 FIN de lib/screens/recipients_screen.dart
