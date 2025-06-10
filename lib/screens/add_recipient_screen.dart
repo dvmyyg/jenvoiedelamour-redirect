@@ -172,4 +172,5 @@ class _AddRecipientScreenState extends State<AddRecipientScreen> {
     );
   }
 }
-// fin du fichier add_recipients_screen.dart
+
+// 📄 FIN de lib/screens/add_recipient_screen.dart

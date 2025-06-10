@@ -13,11 +13,13 @@
 // ✅ Supporte le défilement infini (infinite looping).
 // ✅ Correction du warning 'withOpacity' deprecated en utilisant 'withAlpha'.
 // ✅ Syntaxe du constructeur mise à jour (super parameters).
-// ✅ Permet de spécifier la hauteur des éléments (itemExtent). // <-- NOUVEAU
+// ✅ Permet de spécifier la hauteur des éléments (itemExtent).
+// ✅ **Correction du filtre de couleur pour afficher correctement la carte centrale.** // <-- NOUVEAU
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
-// V007 - Ajout du paramètre itemExtent au constructeur pour une hauteur d'élément configurable. - 2025/06/06 20h35 // <-- NOUVELLE ENTRÉE
+// V008 - Correction de la logique ColorFiltered pour n'appliquer le filtre qu'aux cartes non sélectionnées (résout le rectangle noir central). - 2025/06/06 22h00 // <-- NOUVELLE ENTRÉE
+// V007 - Ajout du paramètre itemExtent au constructeur pour une hauteur d'élément configurable. - 2025/06/06 20h35 (Historique conservé)
 // V006 - Passage à la syntaxe super parameters pour le paramètre 'key' du constructeur. - 2025/06/06 20h25 (Historique conservé)
 // V005 - Correction du warning 'withOpacity' en remplaçant par 'withAlpha(51)'. - 2025/06/06 20h15 (Historique conservé)
 // V004 - Ajout du défilement infini (infinite looping) - 2025/06/06 20h00 (Historique conservé)
@@ -111,18 +113,26 @@ class _ContactsCarouselState extends State<ContactsCarousel> {
           // Détermine si la carte actuelle (à l'index réel) est la carte sélectionnée réelle
           final isSelected = realIndex == _realSelectedIndex;
 
-          return Transform.scale(
-            scale: isSelected ? 1.08 : 1.0, // 🎯 Reprise ici
-            child: ColorFiltered(
+          // 🎯 DÉBUT BLOC MODIFIÉ DANS LE BUILDER
+          Widget card = widget.cards[realIndex]; // Récupère le widget de la carte originale
+
+          // Applique le filtre d'assombrissement SEULEMENT si la carte N'EST PAS sélectionnée
+          if (!isSelected) {
+            card = ColorFiltered(
               colorFilter: ColorFilter.mode(
-                // Correction : Remplacement de withOpacity(0.2) par withAlpha(51)
-                isSelected ? Colors.transparent : Colors.black.withAlpha(51),
+                Colors.black.withAlpha(51), // Applique le filtre noir semi-transparent
                 BlendMode.darken,
               ),
-              // Utilise l'index réel pour récupérer le bon widget
-              child: widget.cards[realIndex],
-            ),
+              child: card, // Applique le filtre à la carte originale
+            );
+          }
+
+          // Applique le zoom (Transform.scale) à la carte (qu'elle ait été filtrée ou non)
+          return Transform.scale(
+            scale: isSelected ? 1.08 : 1.0,
+            child: card, // Renvoie la carte, potentiellement assombrie et zoomée
           );
+          // 🎯 FIN BLOC MODIFIÉ DANS LE BUILDER
         },
       ),
     );
