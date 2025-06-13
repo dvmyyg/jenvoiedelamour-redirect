@@ -118,7 +118,7 @@ class PairingService {
     } catch (e) {
       debugLog("❌ [PairingService] Erreur lors de l’appairage Firestore entre $userAId et $userBId : $e", level: 'ERROR');
       // TODO: Gérer cette erreur (ex: la propager, la logguer plus spécifiquement)
-      throw e; // Relancer l'exception pour que l'appelant puisse la gérer
+      rethrow; // Relancer l'exception pour que l'appelant puisse la gérer
     }
   } // <-- Fin de la fonction pairUsers
 
@@ -159,7 +159,7 @@ class PairingService {
     } catch (e) {
       debugLog("❌ [PairingService] Erreur lors de la suppression d’appairage entre $userAUid et $userBUid : $e", level: 'ERROR');
       // TODO: Gérer cette erreur
-      throw e; // Relancer l'exception
+      rethrow; // Relancer l'exception
     }
   } // <-- Fin de la fonction unpairUsers
 
@@ -191,7 +191,7 @@ class PairingService {
     } catch (e) {
       debugLog("❌ [PairingService] Erreur lors de la vérification d’appairage entre $userUid et $partnerUid : $e", level: 'ERROR');
       // TODO: Gérer cette erreur
-      throw e; // Relancer l'exception
+      rethrow; // Relancer l'exception
     }
   } // <-- Fin de la fonction isPairedWith
 
@@ -248,7 +248,7 @@ class PairingService {
     } catch (e) {
       debugLog("❌ [PairingService] Erreur lors de la récupération des données du destinataire ($partnerUid pour $userUid) : $e", level: 'ERROR');
       // TODO: Gérer cette erreur
-      throw e; // Relancer l'exception
+      rethrow; // Relancer l'exception
     }
   } // <-- Fin de la fonction getRecipientData
 

@@ -3,14 +3,19 @@
 // -------------------------------------------------------------
 // 🧹 FONCTIONNALITÉS PRINCIPALES
 // -------------------------------------------------------------
-// ✅ Gère la récupération du token FCM de l'appareil et son stockage.
+// ✅ Gère la récupération du token FCM de l'appareil et son stockage via Firestore.
 // ✅ Écoute les changements de token FCM et met à jour Firestore.
-// ✅ Gère les messages FCM reçus quand l'application est au premier plan.
+// ✅ Gère les messages FCM reçus quand l'application est au premier plan et affiche une notification locale.
 // ✅ Gère le clic sur les notifications quand l'application est ouverte par le clic (via onMessageOpenedApp).
 // ✅ Délègue la logique de navigation post-notification à NotificationRouter.
+// ✅ Reçoit l'instance de FlutterLocalNotificationsPlugin via injection de dépendances.
+// ✅ Utilise la configuration de notification centralisée (notification_config.dart).
+// ✅ Gère la nullité potentielle de message.messageId pour générer l'ID local de notification.
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V008 - Utilisation de notification_config.dart pour la configuration des notifications locales (messageNotificationDetails). Ajout gestion null message.messageId pour ID local. - 2025/06/13 20h55
+// V007 - Injection de FlutterLocalNotificationsPlugin via constructeur et utilisation du champ injecté. - 2025/06/13 20h53
 // V006 - Suppression de la méthode obsolète handleNotificationClick + nettoyage imports. - 2025/06/10 16h52
 // V005 - Utilise CurrentUserService pour les paramètres isReceiver et deviceLang dans handleNotificationClick. - 2025/06/04
 // V004 - Correction de l'accès aux getters statiques onMessage et onMessageOpenedApp. - 2025/06/02
@@ -26,14 +31,22 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jelamvp01/utils/debug_log.dart';
-import 'package:jelamvp01/main.dart';
+// import 'package:jelamvp01/main.dart'; // Import de main.dart non nécessaire ici pour la configuration des notifications
 import 'package:jelamvp01/navigation/notification_router.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // Import nécessaire pour le type injecté
+import 'notification_config.dart'; // ✅ MODIF : Import de la configuration centralisée
+import 'dart:async'; // Import nécessaire pour DateTime
 
 // =============================================================
 // 🔐 TOKEN — Récupération et mise à jour
 // =============================================================
 class FcmService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // ✅ MODIF : Champ pour l'instance injectée de FlutterLocalNotificationsPlugin
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin;
+
+  // ✅ MODIF : Constructeur qui accepte le plugin en paramètre
+  FcmService(this._flutterLocalNotificationsPlugin);
 
   Future<void> updateTokenForCurrentUser() async {
     User? currentUser = FirebaseAuth.instance.currentUser;
@@ -93,13 +106,17 @@ class FcmService {
     RemoteNotification? notification = message.notification;
     if (notification != null && notification.title != null && notification.body != null && message.data.isNotEmpty) {
       try {
-        final int notificationId = message.messageId.hashCode;
+        // ✅ MODIF : Ajout gestion null message.messageId avec fallback sur timestamp
+        final int notificationId = message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch;
         final String notificationClickPayload = message.data['senderId'] ?? '';
-        await flutterLocalNotificationsPlugin.show(
+
+        // ✅ MODIF : Utilise le champ injecté _flutterLocalNotificationsPlugin
+        // ✅ Utilise messageNotificationDetails importé depuis notification_config.dart
+        await _flutterLocalNotificationsPlugin.show(
           notificationId,
           notification.title,
           notification.body,
-          platformChannelSpecifics,
+          messageNotificationDetails, // Utilise la nouvelle constante importée
           payload: notificationClickPayload,
         );
         debugLog("🔔 [FCM Service] Notification locale affichée au premier plan (ID: $notificationId). Payload clic: $notificationClickPayload", level: 'INFO');

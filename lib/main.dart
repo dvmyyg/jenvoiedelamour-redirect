@@ -8,17 +8,20 @@
 // ✅ Initialise le conteneur d'injection de dépendances (get_it) et enregistre les services/ressources.
 // ✅ Détermine l'écran initial affiché à l'utilisateur (Login, Email Verification, HomeSelector, PairSuccessScreen).
 // ✅ Gère les deep links d'appairage via app_links (logique déplacée vers un service dédié ultérieurement).
-// ✅ Contient la logique de la fonction d'appairage bilatéral 'pairUsers' (sera déplacée vers un service dédié ultérieurement).
+// ⛔️ La logique de la fonction d'appairage bilatéral 'pairUsers' a été commentée/déplacée vers PairingService.
 // ✅ Gère la langue de l'appareil (via CurrentUserService - rôle réévalué ultérieurement, ou fallback système).
 // ✅ Configure la gestion des messages FCM en arrière-plan, au premier plan, et à l'ouverture par clic (logique déplacée vers FcmService ultérieurement).
 // ✅ Initialise le plugin flutter_local_notifications pour l'affichage local des notifications (logique déplacée vers FcmService ultérieurement).
-// ✅ Rend le NavigatorKey global accessible via le conteneur d'injection. // ✅ Mise à jour de la description
-// ✅ Rend le plugin flutter_local_notifications accessible via le conteneur d'injection. // ✅ Mise à jour de la description
+// ✅ Rend le NavigatorKey global accessible via le conteneur d'injection.
+// ✅ Rend le plugin flutter_local_notifications accessible via le conteneur d'injection.
 // ✅ Implémente et enregistre les handlers de clic pour notifications locales (onDidReceiveNotificationResponse, onDidReceiveBackgroundNotificationResponse) - logique déplacée vers FcmService ultérieurement.
 // ✅ Lit le statut isReceiver et la langue depuis Firestore/PlatformDispatcher dans les handlers de navigation post-notification si CurrentUserService n'est pas fiable à ce stade.
+// ✅ Annule les subscriptions aux listeners FCM (onMessage, onMessageOpenedApp) dans dispose().
+// ✅ Utilise la configuration de notification centralisée (notification_config.dart).
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V019 - Utilisation de notification_config.dart pour la configuration des notifications locales. Suppression des constantes de configuration locales. - 2025/06/13 21h25
 // V018 - Commenté proprement la fonction pairUsers (devenue obsolète). Ajout d’un tag de dépréciation. Confirmation de la présence correcte du dispose(). Ajustement du plan d'action et vérification de la cohérence entre blocs. - 2025/06/13 19h50
 // V017 - Intégration de get_it pour l'injection de dépendances. Remplacement des accès globaux à navigatorKey et flutterLocalNotificationsPlugin par des appels via getIt. Appel à setupLocator dans main(). Suppression (commentée) des déclarations globales de ces variables. Mise à jour de la description des fonctionnalités impactées dans l'en-tête. - 2025/06/11 17h25
 // V016 - Suppression de la constante globale isReceiver ; lecture du statut isReceiver depuis Firestore dans les handlers de notification pour une source de vérité unique et fiable. - 2025/06/07
@@ -39,7 +42,7 @@
 // V001 - Version initiale nécessitant correction prénom utilisateur. - 2025/05/23
 // -------------------------------------------------------------
 
-// GEM - code corrigé et historique mis à jour par Gémini le 2025/06/11 17h25
+// GEM - code corrigé et historique mis à jour par Gémini le 2025/06/13 21h25
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -53,6 +56,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart'; /
 
 // ✅ AJOUT : Import du service locator
 import 'utils/service_locator.dart';
+
+// ✅ AJOUT : Import de la configuration de notification centralisée
+import 'services/notification_config.dart'; // Ajuste le chemin si nécessaire
 
 // On importe les écrans principaux. Ils devront maintenant gérer l'UID via FirebaseAuth.currentUser
 // ou le recevoir en paramètre si l'action concerne un autre utilisateur.
@@ -322,6 +328,7 @@ Future<String?> pairUsers(String userAId, String userBId) async {
 
 */
 // ⛔️ FIN du bloc à supprimer — 2025/06/13
+
 // --- FIN   DU BLOC 04 ---
 
 // --- DEBUT DU BLOC 05 ---
@@ -489,46 +496,46 @@ Future<void> main() async {
         // Pour Android >= 13+, il est recommandé d'enregistrer un handler spécifique pour les clics
         // lorsque l'application est complètement terminée. Ce handler doit aussi être une fonction de top-level.
         onDidReceiveBackgroundNotificationResponse ; }
-        );
-        debugLog("🔔 flutter_local_notifications initialisé", level: 'INFO');
+  );
+  debugLog("🔔 flutter_local_notifications initialisé", level: 'INFO');
 
-        // Enregistrement du background handler FCM TRES TOT, juste après ensureInitialized et les notifs locales
-        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-        debugLog("🖙 FCM background handler enregistré", level: 'INFO');
+  // Enregistrement du background handler FCM TRES TOT, juste après ensureInitialized et les notifs locales
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  debugLog("🖙 FCM background handler enregistré", level: 'INFO');
 
-        // Initialiser Firebase (important avant d'utiliser Firebase Auth ou Firestore)
-        // Assure-toi que ton fichier firebase_options.dart est correct.
-        if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-        );
-        }
+  // Initialiser Firebase (important avant d'utiliser Firebase Auth ou Firestore)
+  // Assure-toi que ton fichier firebase_options.dart est correct.
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
-        debugLog("✨ Firebase initialisé", level: 'INFO');
+  debugLog("✨ Firebase initialisé", level: 'INFO');
 
-        // Attendre que Firebase Auth récupère l'état de connexion persistant.
-        // Cela est crucial pour savoir si un utilisateur est déjà connecté au démarrage.
-        await FirebaseAuth.instance.authStateChanges().first;
-        debugLog("👤 État d'auth Firebase synchronisé", level: 'INFO');
+  // Attendre que Firebase Auth récupère l'état de connexion persistant.
+  // Cela est crucial pour savoir si un utilisateur est déjà connecté au démarrage.
+  await FirebaseAuth.instance.authStateChanges().first;
+  debugLog("👤 État d'auth Firebase synchronisé", level: 'INFO');
 
-        // La langue du téléphone reste utile pour l'internationalisation et peut être récupérée indépendamment de l'identifiant utilisateur.
-        final String deviceLang = PlatformDispatcher.instance.locale.languageCode; // La langue reste importante
-        debugLog("🌐 Langue du téléphone : $deviceLang", level: 'INFO');
+  // La langue du téléphone reste utile pour l'internationalisation et peut être récupérée indépendamment de l'identifiant utilisateur.
+  final String deviceLang = PlatformDispatcher.instance.locale.languageCode; // La langue reste importante
+  debugLog("🌐 Langue du téléphone : $deviceLang", level: 'INFO');
 
-        // TODO: La sauvegarde/mise à jour du token FCM est maintenant gérée par le FcmService
-        // qui est appelé dans HomeSelector après authentification/vérification email réussie.
-        // Nous n'avons plus besoin de cette logique ici dans main().
+  // TODO: La sauvegarde/mise à jour du token FCM est maintenant gérée par le FcmService
+  // qui est appelé dans HomeSelector après authentification/vérification email réussie.
+  // Nous n'avons plus besoin de cette logique ici dans main().
 
-        final String? initialPairedRecipientUid = await handleAppLinks();
+  final String? initialPairedRecipientUid = await handleAppLinks();
 
-        FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) async { // <-- Début de l'appel .then()
-        if (message != null) { // <-- Début du bloc si message non null
-        debugLog("🔔 [MAIN] App ouverte par notif initiale: ${message.messageId}", level: 'INFO');
-        debugLog("🔔 [MAIN] Data payload from initial message: ${message.data}", level: 'DEBUG');
+  FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) async { // <-- Début de l'appel .then()
+    if (message != null) { // <-- Début du bloc si message non null
+      debugLog("🔔 [MAIN] App ouverte par notif initiale: ${message.messageId}", level: 'INFO');
+      debugLog("🔔 [MAIN] Data payload from initial message: ${message.data}", level: 'DEBUG');
 
-        final String? senderUid = message.data['senderId']; // Le champ est 'senderId' dans ton payload de Cloud Function
+      final String? senderUid = message.data['senderId']; // Le champ est 'senderId' dans ton payload de Cloud Function
 
-        if (senderUid != null && senderUid.isNotEmpty) { // <-- Début du bloc si senderUid non null/vide
+      if (senderUid != null && senderUid.isNotEmpty) { // <-- Début du bloc si senderUid non null/vide
         debugLog('➡️ [MAIN - INITIAL MESSAGE] Déclencher logique de navigation vers conversation avec $senderUid', level: 'INFO');
 
         // Ces variables doivent être déclarées AVANT les blocs conditionnels où elles sont utilisées.
@@ -542,122 +549,122 @@ Future<void> main() async {
         // --- DÉBUT DE LA CHAÎNE IF/ELSE IF POUR currentUser ---
         // Ce bloc vérifie l'état de l'utilisateur actuel et charge ses données/celles du destinataire si nécessaire.
         if (currentUser != null && currentUser.uid != senderUid) { // <-- Début du bloc si l'utilisateur est connecté et n'est pas l'expéditeur
-        // Charger les données isReceiver depuis Firestore si l'utilisateur est connecté.
-        // TODO: Etape 3 - Déplacer cet accès Firestore vers FirestoreService.get...() // ⛔️ À supprimer - Logique déplacée vers CurrentUserService (futur) ou FirestoreService - 2025/06/14
-        try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
-        if (userDoc.exists) {
-        final userData = userDoc.data();
-        currentUserIsReceiver = userData?['isReceiver'] == true;
-        // Tu pourrais aussi stocker la langue préférée de l'utilisateur dans son doc si tu ne veux pas utiliser PlatformDispatcher
-        // currentUserDeviceLang = userData?['deviceLang'] ?? PlatformDispatcher.instance.locale.languageCode;
-        debugLog("✅ [MAIN - INITIAL MESSAGE] Données utilisateur (isReceiver) chargées depuis Firestore pour navigation.", level: 'INFO');
-        } else {
-        debugLog("⚠️ [MAIN - INITIAL MESSAGE] Document utilisateur actuel (${currentUser.uid}) non trouvé pour charger isReceiver.", level: 'WARNING');
-        }
-        } catch (e) {
-        debugLog("❌ [MAIN - INITIAL MESSAGE] Erreur lors du chargement des données utilisateur pour navigation : $e", level: 'ERROR');
-        // Gérer l'erreur (ex: ne pas naviguer, afficher un message d'erreur)
-        }
+          // Charger les données isReceiver depuis Firestore si l'utilisateur est connecté.
+          // TODO: Etape 3 - Déplacer cet accès Firestore vers FirestoreService.get...() // ⛔️ À supprimer - Logique déplacée vers CurrentUserService (futur) ou FirestoreService - 2025/06/14
+          try {
+            final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+            if (userDoc.exists) {
+              final userData = userDoc.data();
+              currentUserIsReceiver = userData?['isReceiver'] == true;
+              // Tu pourrais aussi stocker la langue préférée de l'utilisateur dans son doc si tu ne veux pas utiliser PlatformDispatcher
+              // currentUserDeviceLang = userData?['deviceLang'] ?? PlatformDispatcher.instance.locale.languageCode;
+              debugLog("✅ [MAIN - INITIAL MESSAGE] Données utilisateur (isReceiver) chargées depuis Firestore pour navigation.", level: 'INFO');
+            } else {
+              debugLog("⚠️ [MAIN - INITIAL MESSAGE] Document utilisateur actuel (${currentUser.uid}) non trouvé pour charger isReceiver.", level: 'WARNING');
+            }
+          } catch (e) {
+            debugLog("❌ [MAIN - INITIAL MESSAGE] Erreur lors du chargement des données utilisateur pour navigation : $e", level: 'ERROR');
+            // Gérer l'erreur (ex: ne pas naviguer, afficher un message d'erreur)
+          }
 
-        // Charger les détails du destinataire pour la navigation.
-        // Recipient? recipientDetails; // Initialise à null // Déclarée en dehors du if
+          // Charger les détails du destinataire pour la navigation.
+          // Recipient? recipientDetails; // Initialise à null // Déclarée en dehors du if
 
-        // TODO: Etape 3 - Déplacer cet accès Firestore vers FirestoreService.getRecipient(...) // ⛔️ À supprimer - Logique déplacée vers PairingService - 2025/06/14
-        // try {
-        //   final recipientSnap = await FirebaseFirestore.instance
-        //       .collection('users')
-        //       .doc(currentUser.uid) // UID de l'utilisateur actuellement connecté (currentUser est non-null ici)
-        //       .collection('recipients')
-        //       .doc(senderUid) // L'UID du document est l'UID de
-        //       .get(); // <-- Cette ligne termine l'appel .doc(...).get()
-        //
-        //   if (recipientSnap.exists) {
-        //     final data = recipientSnap.data();
-        //     recipientDetails = Recipient(
-        //       id: senderUid, // L'UID du destinataire (l'expéditeur du message)
-        //       displayName: data?['displayName'] ?? 'Inconnu', // Nom d'affichage du destinataire (si trouvé dans Firestore)
-        //       icon: data?['icon'] ?? '💬', // Icône par défaut si non trouvée
-        //       relation: data?['relation'] ?? 'relation_partner', // Relation par défaut si non trouvée
-        //       allowedPacks: (data?['allowedPacks'] as List?)?.cast<String>() ?? [], // Gérer la liste
-        //       paired: data?['paired'] == true, // Gérer le booléen
-        //       catalogType: data?['catalogType'] ?? 'partner', // Type de catalogue
-        //       createdAt: data?['createdAt'] as Timestamp?, // Timestamp
-        //     );
-        //     debugLog("✅ [MAIN - INITIAL MESSAGE] Détails destinataire ($senderUid) chargés pour navigation.", level: 'INFO');
-        //
-        //   } else {
-        //     debugLog("⚠️ [MAIN - INITIAL MESSAGE] Destinataire ($senderUid) non trouvé dans la liste de l'utilisateur actuel (${currentUser.uid}) pour navigation.", level: 'WARNING');
-        //       // Optionnel: Naviguer vers l'écran principal ou afficher un message si le destinataire n'est pas appairé.
-        //       // getIt<GlobalKey<NavigatorState>>().currentState?.pushReplacementNamed('/'); // TODO: Revoir la navigation
-        //       // navigatorKey.currentState?.pushReplacementNamed('/');
-        //   }
-        // } catch (e) {
-        //   debugLog("❌ [MAIN - INITIAL MESSAGE] Erreur lors du chargement des détails du destinataire ($senderUid) pour navigation : $e", level: 'ERROR');
-        //   // Gérer l'erreur (ex: ne pas naviguer, afficher un message d'erreur)
-        // }
-        // ✅ Remplacé par appel PairingService
-        try {
-        recipientDetails = await getIt<PairingService>().getRecipientData(currentUser.uid, senderUid);
-        debugLog("✅ [MAIN - INITIAL MESSAGE] Détails destinataire ($senderUid) chargés via PairingService.", level: 'INFO');
-        } catch (e) {
-        debugLog("❌ [MAIN - INITIAL MESSAGE] Erreur lors du chargement des détails du destinataire ($senderUid) via PairingService : $e", level: 'ERROR');
-        recipientDetails = null; // Assurer que recipientDetails est null en cas d'erreur
-        }
+          // TODO: Etape 3 - Déplacer cet accès Firestore vers FirestoreService.getRecipient(...) // ⛔️ À supprimer - Logique déplacée vers PairingService - 2025/06/14
+          // try {
+          //   final recipientSnap = await FirebaseFirestore.instance
+          //       .collection('users')
+          //       .doc(currentUser.uid) // UID de l'utilisateur actuellement connecté (currentUser est non-null ici)
+          //       .collection('recipients')
+          //       .doc(senderUid) // L'UID du document est l'UID de
+          //       .get(); // <-- Cette ligne termine l'appel .doc(...).get()
+          //
+          //   if (recipientSnap.exists) {
+          //     final data = recipientSnap.data();
+          //     recipientDetails = Recipient(
+          //       id: senderUid, // L'UID du destinataire (l'expéditeur du message)
+          //       displayName: data?['displayName'] ?? 'Inconnu', // Nom d'affichage du destinataire (si trouvé dans Firestore)
+          //       icon: data?['icon'] ?? '💬', // Icône par défaut si non trouvée
+          //       relation: data?['relation'] ?? 'relation_partner', // Relation par défaut si non trouvée
+          //       allowedPacks: (data?['allowedPacks'] as List?)?.cast<String>() ?? [], // Gérer la liste
+          //       paired: data?['paired'] == true, // Gérer le booléen
+          //       catalogType: data?['catalogType'] ?? 'partner', // Type de catalogue
+          //       createdAt: data?['createdAt'] as Timestamp?, // Timestamp
+          //     );
+          //     debugLog("✅ [MAIN - INITIAL MESSAGE] Détails destinataire ($senderUid) chargés pour navigation.", level: 'INFO');
+          //
+          //   } else {
+          //     debugLog("⚠️ [MAIN - INITIAL MESSAGE] Destinataire ($senderUid) non trouvé dans la liste de l'utilisateur actuel (${currentUser.uid}) pour navigation.", level: 'WARNING');
+          //       // Optionnel: Naviguer vers l'écran principal ou afficher un message si le destinataire n'est pas appairé.
+          //       // getIt<GlobalKey<NavigatorState>>().currentState?.pushReplacementNamed('/'); // TODO: Revoir la navigation
+          //       // navigatorKey.currentState?.pushReplacementNamed('/');
+          //   }
+          // } catch (e) {
+          //   debugLog("❌ [MAIN - INITIAL MESSAGE] Erreur lors du chargement des détails du destinataire ($senderUid) pour navigation : $e", level: 'ERROR');
+          //   // Gérer l'erreur (ex: ne pas naviguer, afficher un message d'erreur)
+          // }
+          // ✅ Remplacé par appel PairingService
+          try {
+            recipientDetails = await getIt<PairingService>().getRecipientData(currentUser.uid, senderUid);
+            debugLog("✅ [MAIN - INITIAL MESSAGE] Détails destinataire ($senderUid) chargés via PairingService.", level: 'INFO');
+          } catch (e) {
+            debugLog("❌ [MAIN - INITIAL MESSAGE] Erreur lors du chargement des détails du destinataire ($senderUid) via PairingService : $e", level: 'ERROR');
+            recipientDetails = null; // Assurer que recipientDetails est null en cas d'erreur
+          }
 
 
-        // Naviguer si les details du destinataire sont trouvés.
-        if (recipientDetails != null) {
-        // Utilise le navigatorKey global pour naviguer via getIt.
-        // Utiliser Future.delayed(Duration.zero) est une bonne pratique ici aussi.
-        Future.delayed(Duration.zero, () {
-        getIt<GlobalKey<NavigatorState>>().currentState?.push(MaterialPageRoute( // <-- getIt usage #1 (corrected)
-        builder: (context) => RecipientDetailsScreen(
-        deviceLang: currentUserDeviceLang, // Langue - lue depuis Firestore ou PlatformDispatcher
-        recipient: recipientDetails!, // Objet Recipient chargé
-        isReceiver: currentUserIsReceiver, // Rôle de l'utilisateur actuel - lue depuis Firestore
-        ),
-        ));
-        debugLog("➡️ [MAIN - INITIAL MESSAGE] Navigation vers RecipientDetailsScreen réussie pour UID destinataire $senderUid", level: 'INFO');
-        });
-        } else {
-        debugLog("⚠️ [MAIN - INITIAL MESSAGE] Navigation vers RecipientDetailsScreen annulée car détails destinataire non chargés ou introuvables.", level: 'WARNING');
-        // Optionnel : Naviguer vers l'écran principal si la navigation ciblée échoue
-        // getIt<GlobalKey<NavigatorState>>().currentState?.pushReplacementNamed('/'); // <-- getIt usage #2 (commented duplicate)
-        }
+          // Naviguer si les details du destinataire sont trouvés.
+          if (recipientDetails != null) {
+            // Utilise le navigatorKey global pour naviguer via getIt.
+            // Utiliser Future.delayed(Duration.zero) est une bonne pratique ici aussi.
+            Future.delayed(Duration.zero, () {
+              getIt<GlobalKey<NavigatorState>>().currentState?.push(MaterialPageRoute( // <-- getIt usage #1 (corrected)
+                builder: (context) => RecipientDetailsScreen(
+                  deviceLang: currentUserDeviceLang, // Langue - lue depuis Firestore ou PlatformDispatcher
+                  recipient: recipientDetails!, // Objet Recipient chargé
+                  isReceiver: currentUserIsReceiver, // Rôle de l'utilisateur actuel - lue depuis Firestore
+                ),
+              ));
+              debugLog("➡️ [MAIN - INITIAL MESSAGE] Navigation vers RecipientDetailsScreen réussie pour UID destinataire $senderUid", level: 'INFO');
+            });
+          } else {
+            debugLog("⚠️ [MAIN - INITIAL MESSAGE] Navigation vers RecipientDetailsScreen annulée car détails destinataire non chargés ou introuvables.", level: 'WARNING');
+            // Optionnel : Naviguer vers l'écran principal si la navigation ciblée échoue
+            // getIt<GlobalKey<NavigatorState>>().currentState?.pushReplacementNamed('/'); // <-- getIt usage #2 (commented duplicate)
+          }
 
         } else if (currentUser == null) { // <-- Début du bloc si l'utilisateur n'est pas connecté
-        debugLog("⚠️ [MAIN - INITIAL MESSAGE] Utilisateur actuel null lors du chargement des détails du destinataire pour navigation.", level: 'WARNING');
-        // Si l'utilisateur actuel est null ici, c'est un problème de flux d'authentification.
-        // Ne pas naviguer vers l'écran de chat.
+          debugLog("⚠️ [MAIN - INITIAL MESSAGE] Utilisateur actuel null lors du chargement des détails du destinataire pour navigation.", level: 'WARNING');
+          // Si l'utilisateur actuel est null ici, c'est un problème de flux d'authentification.
+          // Ne pas naviguer vers l'écran de chat.
         } else if (currentUser.uid == senderUid) { // <-- Début du bloc si c'est le même utilisateur
-        debugLog("⚠️ [MAIN - INITIAL MESSAGE] Clic sur notification de soi-même ($senderUid). Pas de navigation ciblée.", level: 'INFO');
-        // Ne rien faire ou naviguer vers l'écran principal si tu veux.
-        // getIt<GlobalKey<NavigatorState>>().currentState?.pushReplacementNamed('/'); // <-- getIt usage #3 (commented)
+          debugLog("⚠️ [MAIN - INITIAL MESSAGE] Clic sur notification de soi-même ($senderUid). Pas de navigation ciblée.", level: 'INFO');
+          // Ne rien faire ou naviguer vers l'écran principal si tu veux.
+          // getIt<GlobalKey<NavigatorState>>().currentState?.pushReplacementNamed('/'); // <-- getIt usage #3 (commented)
         } // <-- Fin de la chaîne IF/ELSE IF POUR currentUser
 
-        } else { // <-- ELSE POUR `if (senderUid != null && senderUid.isNotEmpty)` (senderUid est null/vide)
+      } else { // <-- ELSE POUR `if (senderUid != null && senderUid.isNotEmpty)` (senderUid est null/vide)
         debugLog('⚠️ [MAIN - INITIAL MESSAGE] Payload senderId manquant ou invalide dans le message initial. Pas de navigation ciblée.', level: 'WARNING');
         // Le message initial n'a pas le bon format pour déclencher une navigation ciblée vers le chat.
         // L'application continuera son flux normal (affichage de LoveScreen si l'utilisateur est connecté, etc.)
-        } // <-- Fin du bloc if (senderUid != null && senderUid.isNotEmpty)
+      } // <-- Fin du bloc if (senderUid != null && senderUid.isNotEmpty)
 
-        } else { // <-- ELSE POUR `if (message != null)` (message est null)
-        // Le message initial était null (l'application n'a pas été lancée par une notif FCM)
-        debugLog('🖙 [MAIN - INITIAL MESSAGE] Aucun message FCM initial pour lancer l\'app.', level: 'INFO');
-        } // <-- Fin du bloc if (message != null)
+    } else { // <-- ELSE POUR `if (message != null)` (message est null)
+      // Le message initial était null (l'application n'a pas été lancée par une notif FCM)
+      debugLog('🖙 [MAIN - INITIAL MESSAGE] Aucun message FCM initial pour lancer l\'app.', level: 'INFO');
+    } // <-- Fin du bloc if (message != null)
 
-        }); // <-- Fin de l'appel .then()
+  }); // <-- Fin de l'appel .then()
 
 
-        // Lance l'application principale ...
-        runApp(MyApp(
-        // deviceId: deviceId, // <-- SUPPRIMÉ du constructeur de MyApp
-        deviceLang: deviceLang, // La langue reste pertinente
-        // On passe l'UID de l'autre utilisateur si un appairage via deep link a réussi au démarrage
-        initialPairSuccessRecipientUid: initialPairedRecipientUid,
-        ));
-      }
+  // Lance l'application principale ...
+  runApp(MyApp(
+    // deviceId: deviceId, // <-- SUPPRIMÉ du constructeur de MyApp
+    deviceLang: deviceLang, // La langue reste pertinente
+    // On passe l'UID de l'autre utilisateur si un appairage via deep link a réussi au démarrage
+    initialPairSuccessRecipientUid: initialPairedRecipientUid,
+  ));
+}
 
 // --- FIN   DU BLOC 05 ---
 
