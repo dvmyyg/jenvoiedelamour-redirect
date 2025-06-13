@@ -1,0 +1,13 @@
+Explication des modifications :
+Historique et Commentaire GEM : Ajout d'une nouvelle entrée d'historique ( V003 ) et du commentaire // GEM . Mise à jour des fonctionnalités principales dans les commentaires en haut.
+Suppression du paramètre deviceId : Le champ final String deviceId; et sa référence dans le constructeur ont été supprimés.
+Accès à l'UID de l'utilisateur actuel : J'ai ajouté un bloc pour récupérer l'utilisateur Firebase connecté ( FirebaseAuth.instance.currentUser ). J'ai inclus une gestion de base du cas null (qui ne devrait pas arriver si main.dart gère correctement la navigation, mais c'est plus sûr). L'UID de l'utilisateur actuel est stocké dans la variable locale currentUserId .
+Accès à l'UID du destinataire : L'UID du destinataire est maintenant obtenu via recipient.id . Le modèle Recipient refactorisé a son champ id qui est censé contenir cet UID. L'UID du destinataire est stocké dans la variable locale recipientUserId .
+Initialisation du MessageService : L'instance de MessageService est maintenant créée en lui passant currentUserId et recipientUserId , conformément au constructeur du MessageService refactorisé.
+Logique d'identification des messages ( isMe ) : La condition msg.from == deviceId a été changée en msg.from == currentUserId . Comme le modèle Message refactorisé a son champ from qui stocke l'UID de l'expéditeur, cette comparaison est maintenant correcte pour identifier les messages envoyés par l'utilisateur actuel.
+Appel à Message.quick et messageService.sendMessage : Dans la fonction onPressed du bouton d'envoi rapide, Message.quick est maintenant appelée en lui passant currentUserId et recipientUserId . messageService.sendMessage est ensuite appelée avec l'objet Message ainsi créé. Ces appels fonctionnent correctement avec les versions refactorisées du modèle et du service.
+UI : L'UI générale (AppBar, StreamBuilder pour la liste de messages, structure des bulles de message) reste inchangée, mais elle s'appuie sur les données (messages avec UID) et les services (MessageService) refactorisés.
+Avec ces modifications, ChatScreen est désormais capable d'afficher les messages en se basant entièrement sur les UID Firebase, en utilisant les services et modèles adaptés.
+
+
+

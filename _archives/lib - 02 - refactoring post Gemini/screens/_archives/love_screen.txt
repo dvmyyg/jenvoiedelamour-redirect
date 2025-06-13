@@ -1,0 +1,5 @@
+Le code que vous avez collé est correct dans le contexte du refactoring vers les UID Firebase, pour les raisons que nous avons déjà détaillées :
+Suppression du paramètre deviceId .
+Utilisation de FirebaseAuth pour la connexion.
+Suppression de l'écriture obsolète dans devices/{deviceId} .
+Dépendance à main.dart pour la navigation post-connexion.

@@ -1,0 +1,12 @@
+Explication des modifications :
+Historique et Commentaire GEM : Ajout d'une nouvelle entrée d'historique ( V002 ) et du commentaire // GEM . Mise à jour des commentaires en haut pour refléter la nouvelle fonctionnalité principale.
+Suppression du paramètre deviceId : Le champ final String deviceId; et sa référence dans le constructeur ont été supprimés.
+Accès à l'UID de l'utilisateur actuel : J'ai ajouté une variable d'état _currentUserId et l'initialise dans initState en utilisant FirebaseAuth.instance.currentUser?.uid . J'ai ajouté une vérification du cas null car l'UID de l'expéditeur est nécessaire pour créer l'objet Message dans sendLove .
+Utilisation de l'UID du destinataire : L'UID du destinataire est obtenu via widget.recipient.id (car le modèle Recipient refactorisé stocke l'UID de l'autre personne dans son champ id ) et stocké dans la variable locale recipientUserId dans sendLove .
+Remplacement de la logique d'envoi ( sendLove ) : C'est la modification la plus importante. L'ancienne logique qui faisait une mise à jour directe dans devices/{recipient.deviceId} a été commentée/supprimée.
+
+Elle est remplacée par une nouvelle logique qui :
+Crée un objet Message : Au lieu de simplement mettre à jour quelques champs dans un document existant, on construit un objet Message structuré. Cet objet contient toutes les informations pertinentes pour le message, comme l'ID unique ( id ), l'UID de l'expéditeur ( from ), l'UID du destinataire ( to ), le type de message ( type ), le contenu ( content généré par i18n_service ), et le horodatage d'envoi ( sentAt ).
+Utilise le MessageService : Une fois l'objet Message créé, on instancie ou utilise le MessageService (en lui passant les UID de l'expéditeur et du destinataire). C'est ce service qui est désormais responsable de la logique complexe d'enregistrement du message.
+Appelle messageService.sendMessage(msg) : La méthode sendMessage du service est appelée avec l'objet Message créé. Ce service s'occupe probablement d'écrire ce message dans les bonnes sous-collections Firestore pour les deux utilisateurs impliqués (la logique "bidirectionnelle" que vous mentionnez, cruciale pour que chaque utilisateur ait sa vue de la conversation).
+Gère le succès et l'erreur de manière centralisée : Les blocs try/catch dans sendLove gèrent l'appel au service. En cas de succès, un message de confirmation s'affiche ( SnackBar ) et on revient à l'écran précédent ( Navigator.pop ). En cas d'erreur, un message d'erreur plus informatif est affiché, toujours en utilisant i18n_service .

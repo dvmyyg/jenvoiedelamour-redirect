@@ -1,0 +1,13 @@
+Explication des modifications :
+Historique et Commentaire GEM : Ajout d'une nouvelle entrée d'historique ( V003 ) et du commentaire // GEM .
+Suppression du paramètre deviceId : Le champ final String deviceId; et sa référence dans le constructeur ont été supprimés. LoginScreen n'a plus besoin de l'ID de l'appareil.
+Simplification de _login :
+La logique principale utilise toujours FirebaseAuth.instance.signInWithEmailAndPassword . J'ai ajouté un indicateur de chargement ( _isLoading ) pour désactiver le bouton pendant la tentative de connexion.
+La logique obsolète qui lisait le prénom depuis users/{uid} (qui n'était pas nécessaire ici) et surtout qui écrivait dans devices/{deviceId} a été complètement supprimée . Cette écriture était une relique de l'ancien modèle hybride et n'a plus sa place ici. Le prénom est déjà géré lors de l'inscription ou de la modification du profil sous l'UID correct.
+L'appel à getUserProfile du firestore_service et l'import correspondant ont été commentés comme potentiellement supprimés (si cet import n'est utilisé nulle part ailleurs dans ce fichier).
+J'ai ajouté des commentaires sur l'utilisation potentielle de AuthService si vous souhaitez centraliser la logique d'auth là-bas au lieu d'appeler FirebaseAuth directement.
+Gestion de la navigation : J'ai ajouté des commentaires expliquant que cet écran ne navigue plus directement vers HomeSelector ou EmailVerificationScreen après une connexion réussie. C'est main.dart (via le StreamBuilder sur FirebaseAuth.instance.authStateChanges() ) qui détecte le changement d'état (l'utilisateur devient non-null) et décide du prochain écran, ce qui est plus propre et centralisé.
+Amélioration de la gestion des erreurs avec FirebaseAuthException pour potentiellement afficher des messages plus précis (TODOs ajoutés).
+Adaptation de la navigation vers RegisterScreen : Lors de la navigation vers RegisterScreen , le paramètre deviceId n'est plus passé.
+UI : L'UI reste structurellement la même (champs email/password, boutons). Le bouton "Se connecter" utilise l'indicateur _isLoading . Les appels à getUILabel utilisent toujours widget.deviceLang , ce qui est correct.
+Cet écran est maintenant un écran de connexion "pur" qui interagit uniquement avec Firebase Authentication et s'appuie sur le widget racine ( main.dart ) pour gérer la navigation après succès ou échec. Il ne dépend plus du deviceId ni n'écrit dans l'ancien modèle de données Firestore.

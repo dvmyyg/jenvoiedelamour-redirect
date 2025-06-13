@@ -1,4 +1,20 @@
-# pubspec.yaml
+# -------------------------------------------------------------
+# 📄 FICHIER : pubspec.yaml
+# -------------------------------------------------------------
+# 🧹 FONCTIONNALITÉS PRINCIPALES
+# -------------------------------------------------------------
+# ✅ Fichier de configuration des dépendances et métadonnées du projet Flutter.
+# ✅ Spécifie le nom, la description, la version et l'environnement SDK.
+# ✅ Liste toutes les dépendances du projet (Firebase, UI, utilitaires).
+# ✅ Liste les dépendances de développement.
+# ✅ Configure les assets (images, polices) si nécessaire (non présent ici).
+# ✅ Configure les icônes de l'application via flutter_launcher_icons.
+# -------------------------------------------------------------
+# 🕓 HISTORIQUE DES MODIFICATIONS
+# -------------------------------------------------------------
+# V002 - Ajout de la dépendance 'get_it' pour la mise en place de l'injection de dépendances. - 2025/06/11 17h25
+# V001 - Fichier initial avec configuration de base et dépendances projet/dev. - date initiale du projet
+# -------------------------------------------------------------
 
 # Nom et description du projet
 name: jelamvp01
@@ -28,6 +44,10 @@ dependencies:
   firebase_analytics: # Firebase Analytics (analyse)
   firebase_app_check: # Sécurité des appels (App Check)
 
+  # --- AJOUT POUR L'INJECTION DE DÉPENDANCES (Étape 1) ---
+  get_it: ^7.7.0 # ✅ Ajout de la dépendance get_it. Utilise la dernière version stable si 7.7.0 est obsolète.
+  # -------------------------------------------------------
+
   # Autres dépendances non liées à Firebase
   share_plus: ^7.2.1                # Partage via des plateformes externes
   flutter_local_notifications: ^17.2.4 # Notifications locales
@@ -56,3 +76,5 @@ flutter_launcher_icons:
 # Configuration Flutter
 flutter:
   uses-material-design: true
+
+# 📄 FIN de pubspec.yaml

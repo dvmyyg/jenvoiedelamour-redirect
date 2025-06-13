@@ -1,0 +1,11 @@
+Explication des modifications dans ce dernier bloc :
+Fin de _editRecipient : Complète la méthode _editRecipient qui prend l'objet Recipient en paramètre et navigue vers EditRecipientScreen , en passant cet objet Recipient refactorisé (dont l' id est l'UID du destinataire) et la langue. Le .then((result)) est conservé pour rafraîchir la liste si l'édition a entraîné des modifications sauvegardées.
+Vérification _currentUserId dans build : Ajout d'une vérification similaire aux autres écrans refactorisés pour s'assurer que l'UID de l'utilisateur actuel est disponible avant de construire l'UI principale (qui dépend du chargement des destinataires).
+UI Principale ( build ) : L'UI affiche toujours les boutons "Inviter quelqu'un" et "Valider une invitation" qui appellent les méthodes refactorisées ( _goToAddRecipientScreen , _showPasteLinkDialog ). Elle affiche la liste des destinataires ( _recipients.map ) qui sont maintenant des objets Recipient refactorisés (ID = UID du destinataire).
+Actions sur les éléments de liste ( ListTile ):
+Le bouton d'édition appelle _editRecipient(r) en lui passant l'objet Recipient .
+Le bouton de suppression appelle _confirmDeleteRecipient(r) en lui passant l'objet Recipient pour que la fonction puisse accéder à l'UID du destinataire ( r.id ).
+Ajout d'un TODO/exemple de bouton de chat sur chaque élément de liste qui navigue vers RecipientDetailsScreen en passant l'objet Recipient et la langue.
+Navigations depuis la liste : Les navigations vers EditRecipientScreen et RecipientDetailsScreen passent maintenant l'objet Recipient (qui contient l'UID du destinataire dans son champ id ) et widget.deviceLang . Le paramètre deviceId n'est plus passé.
+Fin du Fichier : Ajout des parenthèses fermantes manquantes pour la méthode build et les classes _RecipientsScreenState et RecipientsScreen .
+Avec l'ajout de ce bloc, le fichier lib/screens/recipients_screen.dart est complet et refactorisé. Il gère la liste des destinataires en se basant sur les UID Firebase, utilise les services et modèles adaptés, et adapte la logique d'appairage manuel et les navigations en conséquence.

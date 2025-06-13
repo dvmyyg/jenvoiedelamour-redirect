@@ -1,0 +1,14 @@
+Explication des modifications :
+Historique et Commentaire GEM : Ajout d'une nouvelle entrée ( V003 ) et du commentaire // GEM . Mise à jour des fonctionnalités principales dans les commentaires en haut.
+Remplacement des identifiants :
+Les champs final String deviceId; et final String recipientId; ont été remplacés par final String currentUserId; et final String recipientUserId; .
+Le constructeur prend maintenant ces deux UID obligatoires.
+Adaptation de _messageRef et _mirrorMessageRef : C'est le cœur de la modification pour l'accès Firestore.
+Les références pointent maintenant vers collection('users').doc(...).collection('recipients').doc(...).collection('messages') .
+_messageRef utilise currentUserId puis recipientUserId .
+_mirrorMessageRef utilise recipientUserId puis currentUserId .
+Cela correspond à la nouvelle structure de données : les messages d'une conversation entre deux utilisateurs (Alice et Bob, par exemple) seront stockés dans deux endroits miroir : sous le document "récipient Bob" de l'utilisateur Alice ( users/uid_alice/recipients/uid_bob/messages ) ET sous le document "récipient Alice" de l'utilisateur Bob ( users/uid_bob/recipients/uid_alice/messages ).
+Adaptation de streamMessages : Aucune modification majeure n'est nécessaire ici. La méthode utilise simplement la référence _messageRef (qui est maintenant correcte) et le modèle Message refactorisé (qui lit les UID). Le tri par sentAt est conservé.
+Adaptation de sendMessage : Aucune modification majeure n'est nécessaire ici non plus. La méthode utilise les références _messageRef et _mirrorMessageRef (qui sont maintenant correctes) et le modèle Message refactorisé (dont la méthode toMap() écrit les UID dans les champs from et to ). J'ai ajusté les logs pour refléter l'utilisation des UID.
+Ce service est maintenant prêt à gérer les messages entre deux utilisateurs identifiés par leurs UID Firebase, en utilisant la nouvelle structure de données dans Firestore.
+Il nous reste le firestore_service.dart (pour décider quoi faire de registerDevice et s'assurer qu'il n'y a pas d'autres dépendances à l'ancien modèle)

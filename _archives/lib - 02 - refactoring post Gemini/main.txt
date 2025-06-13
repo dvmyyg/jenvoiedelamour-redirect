@@ -1,0 +1,8 @@
+Explication des modifications majeures dans main.dart :
+Historique et Commentaire GEM : Mise à jour de l'historique avec une description plus complète des changements ( V004 ) et ajout du commentaire // GEM .
+Suppression de la dépendance au deviceId :
+Suppression de l'import de device_service.dart et de l'appel à getDeviceId() . L'application ne génère plus d'ID d'appareil local au démarrage pour identifier l'utilisateur.
+Suppression de l'appel à registerDevice . Si les informations comme isReceiver sont des propriétés utilisateur, elles devront être gérées ailleurs, liées à l'UID.
+Le paramètre deviceId a été supprimé de MyApp et de son constructeur. Il ne sera plus passé aux écrans via ce chemin.
+Centrage sur l'état Firebase Auth :
+await FirebaseAuth.instance.authStateChanges().first; est appelé avant runApp . C

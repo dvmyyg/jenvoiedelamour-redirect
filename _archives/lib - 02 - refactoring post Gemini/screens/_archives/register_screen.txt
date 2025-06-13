@@ -1,0 +1,22 @@
+Nous allons modifier cet écran pour :
+Ne plus prendre deviceId en paramètre.
+Continuer à utiliser FirebaseAuth.instance.createUserWithEmailAndPassword .
+En cas de succès, obtenir l'UID.
+Supprimer l'écriture obsolète dans devices/{deviceId} . L'enregistrement des données utilisateur doit se faire uniquement dans users/{uid} via saveUserProfile .
+Continuer à mettre à jour le displayName dans Firebase Auth et envoyer l'email de vérification.
+Supprimer la navigation directe vers EmailVerificationScreen . Comme pour l'écran de connexion, main.dart (via le StreamBuilder sur authStateChanges ) détectera que l'utilisateur est maintenant connecté (mais son email n'est pas vérifié) et naviguera automatiquement vers l'écran de vérification email.
+Potentiellement utiliser AuthService refactorisé pour la logique d'inscription (optionnel).
+
+
+
+Récapitulatif des modifications dans ce dernier bloc :
+Fin du ListView avec les TextFormField pour le prénom, l'email et le mot de passe. J'ai ajouté un shrinkWrap: true au ListView pour une meilleure gestion de l'espace si le contenu n'occupe pas tout l'écran, et j'ai amélioré la validation de l'email.
+Affichage conditionnel du message d'erreur.
+Le bouton "Créer mon compte" : Il est maintenant désactivé ( onPressed: _isLoading ? null : _register ) et affiche un indicateur de chargement sur l'icône et un texte "Registering..." (avec un TODO pour la traduction) pendant le processus d'inscription.
+Ajout d'un bouton optionnel "Retour à la connexion" ( TextButton ) pour permettre à l'utilisateur de revenir en arrière.
+Fin de la méthode build .
+Fin de la classe _RegisterScreenState .
+Fin de la classe RegisterScreen .
+Ajout d'un TODO final pour s'assurer que l'écran n'est pas appelé avec l'ancien deviceId ailleurs.
+Cet écran est maintenant un écran d'inscription "pur" qui interagit uniquement avec Firebase Authentication et firestore_service pour sauvegarder le profil sous l'UID correct, et s'appuie sur main.dart pour la navigation post-inscription. Il ne dépend plus du deviceId ni n'écrit dans l'ancien modèle devices .
+

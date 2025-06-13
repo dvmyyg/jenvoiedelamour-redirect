@@ -1,0 +1,11 @@
+Récapitulatif des modifications dans ce dernier bloc :
+Fin du TextFormField pour le prénom (la partie onChanged est maintenant gérée par un addListener dans initState ).
+Ajout de la section pour afficher l'email de l'utilisateur.
+Ajout des if pour afficher les messages d'erreur ou de succès.
+Le Spacer() pour pousser les éléments restants vers le bas.
+Le bouton "Sauvegarder" : Il est maintenant conditionnellement affiché ( if (_hasChanged) ) et désactivé ( onPressed: _isLoading ? null : _saveProfile ) pendant la sauvegarde. L'icône et le label peuvent aussi indiquer l'état de chargement (ajout de TODO pour une clé de traduction "saving").
+Les boutons "Déconnexion" et "Accueil" sont également désactivés pendant les opérations ( _isLoading ? null : ... ).
+Fin de la méthode build .
+Fin de la classe _ProfileScreenState .
+Ajout de TODOs finaux pour reconsidérer si la classe ProfileScreen elle-même est nécessaire (oui, car c'est le widget public du StatefulWidget ), s'assurer qu'elle n'est pas appelée avec l'ancien deviceId ailleurs.
+Cet écran est maintenant entièrement basé sur l'UID Firebase pour le chargement et la sauvegarde du profil utilisateur. Il ne fait plus référence à l'ancien modèle devices/{deviceId} 

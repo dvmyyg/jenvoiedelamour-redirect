@@ -1,0 +1,11 @@
+Explication des modifications :
+Historique et Commentaire GEM : Ajout d'une nouvelle entrée d'historique ( V008 ) et du commentaire // GEM .
+Suppression du paramètre deviceId : Le champ final String deviceId; et sa référence dans le constructeur ont été supprimés.
+Accès à l'UID de l'utilisateur actuel : J'ai ajouté une variable d'état _currentUserId et l'initialise dans initState en utilisant FirebaseAuth.instance.currentUser?.uid . J'ai ajouté une vérification et un message d'erreur basique au cas où l'UID serait null (ce qui ne devrait pas arriver si main.dart gère correctement la navigation).
+Accès à l'UID du destinataire : L'UID du destinataire est maintenant obtenu via widget.recipient.id . Le modèle Recipient refactorisé a son champ id qui est censé contenir cet UID. Cet UID est stocké dans la variable locale recipientUserId .
+Initialisation du MessageService : L'instance de MessageService est maintenant créée dans initState en lui passant _currentUserId! (assuré non null par la vérification) et recipientUserId , conformément au constructeur du MessageService refactorisé.
+Logique d'identification des messages ( isMine ) : La condition msg.from == widget.deviceId a été changée en msg.from == _currentUserId . Comme le modèle Message refactorisé a son champ from qui stocke l'UID de l'expéditeur, cette comparaison est maintenant correcte.
+Appel à Message et _messageService.sendMessage : Dans _sendMessage , la création de l'objet Message utilise maintenant _currentUserId! et recipientUserId pour les champs from et to . L'appel à _messageService.sendMessage reste le même, mais opère sur le service initialisé avec les UID corrects.
+Gestion des cas _currentUserId null dans build : Ajout d'une vérification en début de build pour afficher un message d'erreur si l'UID de l'utilisateur actuel est null (ce qui empêcherait l'initialisation du service de message et le bon fonctionnement).
+UI : L'UI générale (AppBar, StreamBuilder, ListView, zone de saisie) reste inchangée, mais elle s'appuie sur le _messageService initialisé avec les UID et le modèle Message refactorisé.
+Avec ces modifications, RecipientDetailsScreen affiche et envoie des messages en se basant entièrement sur les UID Firebase, en utilisant les services et modèles adaptés. C'est maintenant un écran de chat pleinement fonctionnel dans le nouveau modèle d'identifiants.

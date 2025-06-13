@@ -1,0 +1,58 @@
+# pubspec.yaml
+
+# Nom et description du projet
+name: jelamvp01
+description: "L'app qui envoie de l'amour ❤️"
+publish_to: 'none'
+
+# Version de l'application
+version: 1.0.0+1
+
+# Configuration de l'environnement Dart
+environment:
+  sdk: ^3.7.0
+
+# Dépendances du projet
+dependencies:
+  flutter:
+    sdk: flutter  # Dépendance principale de Flutter
+
+  intl: ^0.18.1   # Ajouté pour le support de DateFormat dans l'app
+
+  # Les dépendances Firebase (versions gérées via le BoM dans build.gradle.kts)
+  firebase_core:      # Core de Firebase
+  firebase_auth:      # Authentification Firebase
+  cloud_firestore:    # Firestore (base de données NoSQL)
+  firebase_storage:   # Firebase Storage (stockage des fichiers)
+  firebase_messaging: # Notifications push Firebase
+  firebase_analytics: # Firebase Analytics (analyse)
+  firebase_app_check: # Sécurité des appels (App Check)
+
+  # Autres dépendances non liées à Firebase
+  share_plus: ^7.2.1                # Partage via des plateformes externes
+  flutter_local_notifications: ^17.2.4 # Notifications locales
+  device_info_plus: ^10.0.0         # Infos sur l'appareil
+  shared_preferences: ^2.2.2        # Stockage local simple
+  uuid: ^4.0.0                      # Génération d'identifiants uniques
+  cupertino_icons: ^1.0.8           # Icônes iOS
+
+  # ajouté le 23/05/2025 — gestion des liens entrants (intent://) pour appairage
+  # uni_links ^0.5.1 incompatible avec Android Gradle Plugin (AGP 8+)
+  app_links: ^4.0.0
+
+# Dépendances pour le développement et les outils de test
+dev_dependencies:
+  flutter_test:
+    sdk: flutter                   # Tests Flutter
+  flutter_lints: ^5.0.0            # Linter Flutter
+  flutter_launcher_icons: ^0.13.1  # Générateur d'icônes
+
+# Configuration de l'icône de l'application
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "lib/assets/images/app_icon.png"
+
+# Configuration Flutter
+flutter:
+  uses-material-design: true

@@ -1,0 +1,7 @@
+Explication des modifications :
+Historique et Commentaire GEM : Ajout d'une nouvelle entrée d'historique ( V003 ) et du commentaire // GEM .
+Suppression du paramètre deviceId : Le champ final String deviceId; et sa référence dans le constructeur ont été supprimés.
+Utilisation continue de FirebaseAuth.instance.currentUser : La logique principale des fonctions _startAutoCheck , _checkEmailVerified , et _resendVerificationEmail s'appuyait déjà sur FirebaseAuth.instance.currentUser . Cette approche est conservée et renforcée, car c'est ainsi que l'on gère l'utilisateur authentifié dans ce nouveau modèle. J'ai ajouté quelques vérifications user == null et des messages de log/erreur pour plus de robustesse (même si main.dart est censé l'empêcher d'atteindre cet écran si non connecté).
+Suppression du passage de deviceId à HomeSelector : Lors de la navigation ( Navigator.pushReplacement ) vers HomeSelector dans _startAutoCheck et _checkEmailVerified , le paramètre deviceId n'est plus passé. HomeSelector devra désormais accéder à l'UID de l'utilisateur via FirebaseAuth.instance.currentUser .
+UI : L'UI de l'écran reste inchangée car elle ne dépendait pas directement du deviceId pour son affichage. Elle utilise widget.deviceLang pour les traductions, ce qui est correct.
+Cet écran est maintenant entièrement basé sur l'utilisateur Firebase authentifié ( FirebaseAuth.instance.currentUser ) pour sa logique de vérification email et navigue vers HomeSelector sans dépendance à l'ancien deviceId .

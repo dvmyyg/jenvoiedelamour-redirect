@@ -1,0 +1,14 @@
+Explication des modifications :
+Historique et Commentaire GEM : Ajout d'une nouvelle entrée ( V002 ) et du commentaire // GEM .
+Remplacement de deviceId par currentUserId :
+Le champ final String deviceId; a été remplacé par final String currentUserId; .
+Le constructeur prend maintenant un currentUserId obligatoire.
+Cela signifie que lorsque vous créerez une instance de RecipientService (par exemple, dans un écran), vous lui passerez l'UID de l'utilisateur Firebase actuellement connecté.
+Adaptation de _recipientsRef : C'est le changement clé pour l'accès Firestore. La référence pointe maintenant vers FirebaseFirestore.instance.collection('users').doc(currentUserId).collection('recipients') . Vos listes de destinataires seront stockées sous le document de l'utilisateur, identifié par son UID.
+Adaptation de fetchRecipients :
+La requête where('deviceId', isNotEqualTo: null) a été remplacée par where('paired', isEqualTo: true) . C'est plus logique et sémantique car vous avez un champ paired dans votre modèle Recipient . L'ancien filtre deviceId était une astuce liée au modèle hybride, maintenant obsolète.
+La logique de mapping Recipient.fromMap(doc.id, ...) reste la même, mais maintenant doc.id sera l'UID Firebase de l'autre utilisateur (grâce à la manière dont addRecipient et l'appairage vont fonctionner) et le modèle Recipient est conçu pour utiliser cet id .
+Adaptation de addRecipient , updateRecipient , deleteRecipient :
+Ces méthodes utilisent toujours _recipientsRef.doc(...) . L'identifiant de document utilisé ici est l' id du Recipient ( recipient.id ) ou l' id passé à deleteRecipient . Comme le modèle Recipient (refactorisé précédemment) a son champ id destiné à contenir l'UID Firebase de l'autre utilisateur, et que la référence _recipientsRef pointe vers la sous-collection sous l'UID de l'utilisateur actuel, ces méthodes opéreront correctement sur les documents identifiés par les UID des destinataires dans la nouvelle structure Firestore ( users/{currentUserId}/recipients/{recipientUserId} ).
+J'ai renommé le paramètre id de deleteRecipient en recipientUserId pour plus de clarté.
+Ce service est maintenant prêt à gérer les destinataires d'un utilisateur identifié par son UID Firebase. Il interagit avec la nouvelle structure de données Firestore users/{uid}/recipients .

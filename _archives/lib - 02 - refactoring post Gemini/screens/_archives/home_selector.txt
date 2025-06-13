@@ -1,0 +1,15 @@
+Explication des modifications :
+Historique et Commentaire GEM : Ajout d'une nouvelle entrée d'historique ( V003 ) et du commentaire // GEM . Mise à jour des commentaires en haut.
+Suppression du paramètre deviceId : Le champ final String deviceId; et sa référence dans le constructeur ont été supprimés. HomeSelector ne prend plus l'ID de l'appareil en paramètre.
+Accès à l'UID de l'utilisateur actuel : Dans _loadIsReceiverAndName , j'ai ajouté la récupération de l'utilisateur Firebase connecté via FirebaseAuth.instance.currentUser . J'ai ajouté une vérification du cas null et une gestion d'erreur basique, bien que main.dart soit censé l'empêcher d'atteindre cet écran si l'utilisateur n'est pas connecté.
+Adaptation de la logique de chargement ( _loadIsReceiverAndName ) :
+La référence Firestore pointe maintenant vers collection('users').doc(currentUserId) . L'UID de l'utilisateur actuel est utilisé pour lire son document principal.
+La fonction lit le champ firstName (en priorité, car c'est là que le prénom est sauvegardé d'après ProfileScreen / RegisterScreen ) ou displayName depuis ce document utilisateur.
+Elle lit également le champ isReceiver depuis ce même document utilisateur, car cette propriété est maintenant censée être stockée au niveau de l'utilisateur et non de l'ancien deviceId .
+La fonction retourne maintenant un Map contenant isReceiver et displayName (le prénom/nom).
+Adaptation du FutureBuilder et Navigation :
+Le FutureBuilder appelle _loadIsReceiverAndName pour obtenir les données utilisateur basées sur l'UID.
+Lorsque les données sont chargées, elles sont extraites ( snapshot.data! ). J'ai ajouté une gestion d'erreur basique si le Future échoue ou si la fonction interne retourne une erreur (comme l'utilisateur non connecté).
+Lors de la navigation vers LoveScreen , le paramètre deviceId n'est plus passé. Les paramètres isReceiver et displayName (le prénom) sont passés tels qu'ils ont été chargés depuis le document users/{uid} .
+UI : L'UI principale (le FutureBuilder avec son indicateur de chargement et la redirection) reste structurellement la même, mais elle opère sur le résultat de la nouvelle logique de chargement basée sur l'UID.
+Avec ces modifications, HomeSelector s'appuie désormais sur l'UID Firebase pour charger les données utilisateur nécessaires ( isReceiver , displayName ) depuis la collection users et les passe à l'écran suivant ( LoveScreen ), sans utiliser le deviceId

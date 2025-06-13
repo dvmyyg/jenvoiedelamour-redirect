@@ -1,0 +1,19 @@
+Explication des modifications :
+
+Utilisation de l'UID de l'utilisateur connecté :
+Une variable d'état String? _currentUserId; est ajoutée pour stocker l'UID de l'utilisateur authentifié actuellement .
+Dans initState , on récupère l'UID dès que l'écran s'initialise en utilisant FirebaseAuth.instance.currentUser?.uid .
+Un debugLog est ajouté pour signaler si l'utilisateur n'est pas connecté ( _currentUserId est null), ce qui empêcherait le bon fonctionnement de l'écran de paramètres. Le code inclut maintenant des vérifications de _currentUserId avant de tenter de charger ou de sauvegarder des données.
+Chargement du nom d'affichage ( _loadDisplayName ) :
+Ancien chemin ( devices/{deviceId} ) retiré : La logique pour lire le nom depuis FirebaseFirestore.instance.collection('devices').doc(widget.deviceId).get() est complètement supprimée.
+Nouveau chemin ( users/{uid} ) via Service : La méthode utilise maintenant le _firestoreService (que j'ai initialisé en tant que variable d'état _firestoreService ) pour lire le profil de l'utilisateur connecté. L'appel est await _firestoreService.getUserProfile(_currentUserId!) . Notez le ! après _currentUserId : cela indique à Dart que nous sommes sûrs que _currentUserId n'est pas null à ce stade (grâce à la vérification précédente), mais il est essentiel que le FirestoreService.getUserProfile soit capable de gérer potentiellement un UID null ou un document utilisateur inexistant.
+Cohérence du champ : Le code charge maintenant le champ firstName (cohérent avec l'appel saveUserProfile que vous aviez déjà, bien que le commentaire suggère de vérifier si displayName serait plus approprié globalement).
+Sauvegarde du nom d'affichage ( _saveDisplayName ) :
+Ancienne mise à jour double retirée : Le code qui faisait une mise à jour directe sur devices/{widget.deviceId} est commenté/supprimé. Le code ne sauvegarde plus le nom dans la collection devices .
+Sauvegarde unique via Service ( users/{uid} ) : La méthode se concentre maintenant uniquement sur la sauvegarde du profil de l'utilisateur connecté dans la collection users . L'appel await _firestoreService.saveUserProfile(...) est conservé, mais il utilise maintenant l' uid obtenu directement de FirebaseAuth.instance.currentUser?.uid (avec les vérifications de null appropriées).
+Gestion de l'utilisateur non connecté : Des vérifications supplémentaires sont ajoutées au début de _saveDisplayName pour s'assurer qu'un utilisateur est bien connecté avant de tenter de sauvegarder. Un message d'erreur s'affiche si ce n'est pas le cas.
+Mise à jour de l'interface utilisateur ( build ) :
+Affichage conditionnel : J'ai ajouté un simple contrôle pour afficher un message invitant l'utilisateur à se connecter si _currentUserId est null. C'est une gestion de base pour éviter que l'écran tente de charger ou de sauvegarder sans un utilisateur valide.
+Désactivation du bouton (Optionnel mais recommandé) : Le bouton "Enregistrer" ( ElevatedButton ) est maintenant désactivé ( onPressed: _currentUserId == null ? null : _saveDisplayName ) si _currentUserId est null. Cela offre un meilleur retour visuel à l'utilisateur.
+En résumé, l'écran des paramètres est maintenant complètement orienté utilisateur ( users/{uid} ) et utilise le FirestoreService comme couche d'abstraction pour interagir avec les données du profil utilisateur, éliminant toute dépendance au deviceId pour cette fonctionnalité. C'est une excellente cohérence avec les modifications que vous avez apportées à l'écran d'envoi de messages.
+Ce refactoring renforce la structure de votre application et la prépare mieux à la gestion des utilisateurs multi-appareils et à l'application de règles de sécurité basées sur l'UID.

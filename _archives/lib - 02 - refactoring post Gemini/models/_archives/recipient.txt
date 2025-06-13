@@ -1,0 +1,10 @@
+Explication des modifications :
+Historique et Commentaire GEM : J'ai ajouté une nouvelle entrée dans l'historique ( V004 ) pour décrire ce changement majeur et ajouté le commentaire // GEM .
+Suppression du champ deviceId : J'ai retiré le champ final String deviceId; du modèle. Pourquoi ? Parce qu'après le refactoring, l'identifiant principal du destinataire sera l' UID Firebase de l'autre utilisateur , et cet UID sera stocké comme l' ID du document Firestore dans la sous-collection recipients . Le champ id du modèle Recipient , qui est peuplé par cet ID de document ( doc.id dans fromMap ), contiendra donc déjà l'UID Firebase du destinataire. Le champ deviceId séparé dans le modèle deviendrait redondant et inutile dans le nouveau modèle de données.
+Adaptation du Constructeur : J'ai retiré required this.deviceId du constructeur.
+Adaptation de copyWith : J'ai retiré le paramètre String? deviceId et sa logique associée.
+Adaptation de fromMap : J'ai retiré la ligne deviceId: data['deviceId'] ?? '', . Le id du modèle (qui vient de doc.id ) est maintenant censé être l'UID Firebase du destinataire.
+Adaptation de toMap : J'ai retiré l'entrée 'deviceId': deviceId, car ce champ n'existe plus dans le modèle et ne doit plus être écrit dans Firestore.
+Avec cette modification, le modèle Recipient est prêt à fonctionner avec des identifiants qui sont les UID Firebase de l'autre utilisateur, stockés comme ID de document dans Firestore.
+Cela implique que là où ce modèle est utilisé (notamment dans RecipientService et les écrans qui manipulent les Recipient ), nous devrons nous assurer que les identifiants passés et utilisés sont bien les UID Firebase et non plus les anciens deviceId .
+Passons maintenant au modèle Message , qui lui aussi stocke des identifiants d'expéditeur et de destinataire. Prêt ?
