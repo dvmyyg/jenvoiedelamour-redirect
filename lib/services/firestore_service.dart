@@ -5,6 +5,7 @@
 // -------------------------------------------------------------
 // ✅ Fournit des méthodes pour interagir avec la base de données Cloud Firestore.
 // ✅ Gère la sauvegarde et la récupération du profil utilisateur (collection 'users').
+// ✅ Gère l'obtention d'un stream en temps réel du profil utilisateur (pour synchronisation). // ✅ AJOUT
 // ✅ Inclut des méthodes pour gérer les destinataires (collection 'recipients') et les messages (collection 'messages').
 // ✅ Devient la couche d'abstraction unique pour toutes les opérations Firestore de l'application.
 // ✅ Centralise la logique de lecture/écriture basée sur l'UID Firebase de l'utilisateur.
@@ -12,6 +13,7 @@
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V008 - Ajout de la méthode getUserProfileStream pour la synchronisation en temps réel du profil utilisateur. - 2025/06/14 13h55
 // V007 - Implémentation bidirectionnelle corrigée de updateRecipient via WriteBatch pour synchroniser displayName, icon, relation. Ancienne version unilatérale commentée. - 2025/06/10 23h30
 // V006 - Restauration du fichier à sa dernière version valide avec application rigoureuse des règles de structuration MEGAPROMPT. Ajout commentaire duplication email. - 2025/06/10 18h05
 // V005 - Validation par Gemini en Firebase - Code confirmé comme correctement structuré et refactorisé pour l'utilisation des UID au sein de la classe FirestoreService. Prêt à être utilisé par les appelants. - 2025/05/30
@@ -21,7 +23,7 @@
 // V001 - Création initiale du service Firestore. - 2025/05/?? (Date approximative si V002 est le premier ajout significatif)
 // -------------------------------------------------------------
 
-// GEM - Code restructuré et validé par Gémini le 2025/06/10 // Mise à jour le 10/06
+// GEM - Code restructuré et validé par Gémini le 2025/06/14
 
 import '../utils/debug_log.dart'; // Utilise le logger
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import nécessaire pour interagir avec Firestore et types Firestore
@@ -418,6 +420,29 @@ class FirestoreService {
 //     }
 //   }
 
+  // ✅ Étape 5 / 2.4 : Ajouter la logique pour obtenir un stream du profil utilisateur
+  // Fournit un stream en temps réel des changements sur le document /users/{uid}.
+  // Utilisé par CurrentUserService pour la synchronisation du profil.
+  Stream<DocumentSnapshot<Map<String, dynamic>>> getUserProfileStream(String uid) {
+    debugLog("🔄 [FirestoreService - getUserProfileStream] Ouverture du flux Firestore pour profil UID: $uid", level: 'INFO');
+    if (uid.isEmpty) {
+      debugLog("⚠️ [FirestoreService - getUserProfileStream] UID utilisateur vide. Stream annulé.", level: 'WARN');
+      // Retourne un stream d'erreur en cas d'UID invalide
+      return Stream.error(ArgumentError("User UID cannot be empty for stream."));
+    }
+    try {
+      // Accède à la référence du document utilisateur et écoute les snapshots
+      return _firestore.collection('users').doc(uid).snapshots().handleError((e) {
+        debugLog("❌ [FirestoreService - getUserProfileStream] Erreur lors de l'écoute du profil UID $uid : $e", level: 'ERROR');
+        // L'erreur sera gérée par le listener dans CurrentUserService.
+        throw e; // Rethrow l'erreur au consommateur du stream
+      });
+    } catch (e) {
+      debugLog("❌ [FirestoreService - getUserProfileStream] Erreur inattendue lors de la création du stream pour profil UID $uid : $e", level: 'ERROR');
+      // En cas d'erreur immédiate (ex: règles de sécurité), renvoyer un stream d'erreur.
+      return Stream.error(e);
+    }
+  }
 
 // =============================================================
 // 📝 DESTINATAIRES — Mise à jour bidirectionnelle

@@ -161,9 +161,8 @@ class CurrentUserService {
 
     // Utilise le FirestoreService pour obtenir une référence au document utilisateur
     // et écoute les snapshots en temps réel.
-    // TODO: Implémenter getUserProfileStream dans FirestoreService (Étape 5)
     _profileSubscription = _firestoreService
-        .getUserProfileStream(uid) // Supposons que FirestoreService a une méthode pour obtenir un stream de document
+        .getUserProfileStream(uid) // Maintenant que la méthode existe, cet appel est valide
         .listen(
           (DocumentSnapshot<Map<String, dynamic>> snapshot) {
         debugLog('📩 [CurrentUserService - _startProfileSubscription] Snapshot reçu pour profil UID: ${snapshot.id}', level: 'DEBUG');
