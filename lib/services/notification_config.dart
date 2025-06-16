@@ -10,6 +10,7 @@
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V003 - Anticipation des sons personnalisés Android/Darwin et activation des options de présentation Darwin. - 2025/06/16 18h56
 // V002 - Renommage des constantes pour plus de clarté (MessageChannel, MessageNotificationDetails). Ajout de la structure DarwinNotificationDetails pour iOS/macOS. - 2025/06/13 20h49
 // V001 - Création initiale pour centraliser la configuration des notifications. - 2025/06/13 20h45
 // -------------------------------------------------------------
@@ -28,8 +29,11 @@ AndroidNotificationDetails(
   channelDescription: 'Notifications pour les nouveaux messages reçus', // Description du canal
   importance: Importance.high, // Importance élevée pour qu'elle soit visible
   priority: Priority.high,
-  // Son personnalisé ? Il faut l'ajouter aux ressources Android et le référencer ici.
-  // sound: RawResourceAndroidNotificationSound('notification_sound'), // Exemple: 'notification_sound.wav' dans res/raw
+  // ✅ Son personnalisé désactivé pour l’instant — prêt à l’emploi.
+  //    Pour activer, ajoutez le fichier sonore (ex: notification_love.wav) dans res/raw/
+  //    de votre projet Android natif, puis décommentez la ligne ci-dessous
+  //    en utilisant le nom du fichier sans extension.
+  // sound: RawResourceAndroidNotificationSound('notification_love'),
   // Icônes personnalisées ?
   // largeIcon: FilePathAndroidBitmap('chemin/vers/grande_icone.png'), // Chemin vers une image dans les assets/res
   // smallIcon: '@mipmap/ic_launcher', // Doit être une ressource Android (xml vector ou png) dans mipmap/drawable
@@ -39,13 +43,15 @@ AndroidNotificationDetails(
 // Détails spécifiques aux notifications de messagerie sur iOS et macOS.
 const DarwinNotificationDetails darwinMessageDetails =
 DarwinNotificationDetails(
-  // TODO: Configurer les options spécifiques à iOS/macOS si nécessaire (son, badge, etc.)
-  // sound: 'notification_sound.caf', // Exemple
-  // presentAlert: true,
-  // presentBadge: true,
-  // presentSound: true,
+  presentAlert: true,   // ✅ Affiche une alerte/bannière (iOS/macOS)
+  presentBadge: true,   // ✅ Met à jour le badge de l'icône d'app (iOS/macOS)
+  presentSound: true,   // ✅ Joue un son (le son système par défaut si rien n’est spécifié) (iOS/macOS)
+  // ✅ Son personnalisé désactivé pour l’instant — à activer dès que le fichier audio est ajouté.
+  //    Pour activer, ajoutez le fichier sonore (ex: notification_love.caf) dans le dossier Runner
+  //    de votre projet iOS natif (Xcode), puis décommentez la ligne ci-dessous
+  //    en utilisant le nom du fichier avec l'extension .caf.
+  // sound: 'notification_love.caf',
 );
-
 
 // Détails de la notification de messagerie pour toutes les plateformes supportées (Android, iOS/macOS)
 // C'est l'objet NotificationDetails complet qui est passé à la méthode show() du plugin.
@@ -56,6 +62,5 @@ NotificationDetails(
   macOS: darwinMessageDetails,  // Utilise les mêmes détails Darwin pour macOS (par défaut souvent suffisant)
   // TODO: Ajouter les configurations pour d'autres plateformes si nécessaire (Linux, Windows)
 );
-
 
 // 📄 FIN de lib/services/notification_config.dart
