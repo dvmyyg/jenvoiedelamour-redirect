@@ -5,7 +5,7 @@
 // -------------------------------------------------------------
 // ✅ Fournit des méthodes pour interagir avec la base de données Cloud Firestore.
 // ✅ Gère la sauvegarde et la récupération du profil utilisateur (collection 'users').
-// ✅ Gère l'obtention d'un stream en temps réel du profil utilisateur (pour synchronisation). // ✅ AJOUT
+// ✅ Gère l'obtention d'un stream en temps réel du profil utilisateur (pour synchronisation).
 // ✅ Inclut des méthodes pour gérer les destinataires (collection 'recipients') et les messages (collection 'messages').
 // ✅ Devient la couche d'abstraction unique pour toutes les opérations Firestore de l'application.
 // ✅ Centralise la logique de lecture/écriture basée sur l'UID Firebase de l'utilisateur.
@@ -13,6 +13,9 @@
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V011 - Suppression des blocs de code marqués ⛔️ À supprimer. - 2025/06/17 19h25
+// V010 - Correction de l'appel de méthode toMap() à toFirestore() dans saveUserProfile. - 2025/06/17 18h58
+// V009 - Modification de saveUserProfile pour accepter un objet UserProfile. Utilisation de toMap() du modèle. Mise à jour des logs. - 2025/06/17 13h44
 // V008 - Ajout de la méthode getUserProfileStream pour la synchronisation en temps réel du profil utilisateur. - 2025/06/14 13h55
 // V007 - Implémentation bidirectionnelle corrigée de updateRecipient via WriteBatch pour synchroniser displayName, icon, relation. Ancienne version unilatérale commentée. - 2025/06/10 23h30
 // V006 - Restauration du fichier à sa dernière version valide avec application rigoureuse des règles de structuration MEGAPROMPT. Ajout commentaire duplication email. - 2025/06/10 18h05
@@ -29,6 +32,7 @@ import '../utils/debug_log.dart'; // Utilise le logger
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import nécessaire pour interagir avec Firestore et types Firestore
 import '../models/recipient.dart'; // Ajout pour les méthodes de gestion des destinataires (Recipients)
 import '../models/message.dart';   // Ajout pour les méthodes de gestion des messages (Messages)
+import '../models/user_profile.dart'; // ✅ AJOUT: Import du modèle UserProfile
 
 // Définition de la classe FirestoreService pour encapsuler toutes les méthodes d'interaction avec Firestore
 class FirestoreService {
@@ -57,48 +61,40 @@ class FirestoreService {
 
   // ajouté le 21/05/2025 pour sauvegarder le prénom et l'email dans Firestore > users/{uid}
   // Cette fonction est basée sur l'UID et est conservée. Elle fait maintenant partie de la classe.
+  // 🔄 MODIF V009 : Accepte désormais un objet UserProfile pour plus de cohérence.
   Future<void> saveUserProfile({
-    required String uid,
-    required String email, // L'email est souvent géré par Firebase Auth, peut-être pas nécessaire de le sauvegarder ici si Auth est la source de vérité ?
-    required String firstName,
-    // On pourrait ajouter des champs ici comme 'isReceiver' ou 'lastSeen'
-    // si ces informations doivent être stockées au niveau de l'utilisateur.
-    // Exemple: bool? isReceiver, DateTime? lastSeen
-    // bool? isReceiver, // Exemple: si vous stockez 'isReceiver' par utilisateur
-    // DateTime? lastSeen, // Exemple: pour le statut en ligne/hors ligne
+    required UserProfile profile, // ✅ AJOUT V009 : Utilise l'objet UserProfile
   }) async {
-    debugLog("🔄 [FirestoreService - saveUserProfile] Tentative de sauvegarde du profil pour l'UID : $uid", level: 'INFO');
+    debugLog("🔄 [FirestoreService - saveUserProfile] Tentative de sauvegarde du profil pour l'UID : ${profile.uid}", level: 'INFO'); // ✅ MODIF log
     try {
       // Obtient une référence au document utilisateur
-      DocumentReference userDocRef = _firestore.collection('users').doc(uid);
+      DocumentReference userDocRef = _firestore.collection('users').doc(profile.uid); // ✅ MODIF : utilise profile.uid
 
-      // Prépare les données à sauvegarder (utilise toMap si vous avez un modèle User)
-      Map<String, dynamic> dataToSave = {
-        'email': email, // Note: S'assurer que la politique de données autorise la sauvegarde de l'email dans Firestore
-        'firstName': firstName,
-        // Ajouter ici 'isReceiver': isReceiver, si le champ est ajouté en paramètre
-        'lastSeen': FieldValue.serverTimestamp(), // Exemple: mise à jour du 'lastSeen' à chaque sauvegarde/connexion
-      };
-      // Ajouter d'autres champs optionnels si passés en paramètre
-      // if (isReceiver != null) dataToSave['isReceiver'] = isReceiver;
+      // Prépare les données à sauvegarder (utilise toMap du modèle UserProfile)
+      Map<String, dynamic> dataToSave = profile.toFirestore(); // ✅ MODIF V010 : Utilise la méthode toFirestore() du modèle UserProfile
+
+      // Note: `toMap()` inclut déjà les champs `uid`, `email`, `firstName`, etc.
+      // Si tu veux ajouter des champs comme `lastSeen` qui ne sont pas dans le modèle `UserProfile`,
+      // tu peux les ajouter ici à la map après l'appel à `toMap()`:
+      dataToSave['lastSeen'] = FieldValue.serverTimestamp(); // Ajout de 'lastSeen' qui n'est pas dans le modèle par défaut
 
       // Utilise set avec merge: true pour ne pas écraser d'autres champs existants (comme la sous-collection recipients)
       // et pour créer le document s'il n'existe pas encore.
       await userDocRef.set(dataToSave, SetOptions(merge: true));
 
       debugLog(
-        '✅ [FirestoreService - saveUserProfile] Profil utilisateur enregistré pour UID: $uid ($firstName)',
+        '✅ [FirestoreService - saveUserProfile] Profil utilisateur enregistré pour UID: ${profile.uid} (${profile.firstName})', // ✅ MODIF log
         level: 'SUCCESS',
       );
     } on FirebaseException catch (e) { // Utilise FirebaseException pour une gestion plus spécifique
       debugLog(
-        '❌ [FirestoreService - saveUserProfile] Erreur Firebase lors de la sauvegarde de l\'UID $uid : ${e.code} - ${e.message}',
+        '❌ [FirestoreService - saveUserProfile] Erreur Firebase lors de la sauvegarde pour l\'UID ${profile.uid} : ${e.code} - ${e.message}', // ✅ MODIF log
         level: 'ERROR',
       );
       rethrow; // Rethrow l'exception pour gestion par l'appelant (ex: afficher une SnackBar)
     } catch (e) {
       debugLog(
-        '❌ [FirestoreService - saveUserProfile] Erreur inattendue lors de la sauvegarde de l\'UID $uid : $e',
+        '❌ [FirestoreService - saveUserProfile] Erreur inattendue lors de la sauvegarde pour l\'UID ${profile.uid} : $e', // ✅ MODIF log
         level: 'ERROR',
       );
       rethrow; // Rethrow l'exception
@@ -143,6 +139,8 @@ class FirestoreService {
 
   // TODO: Ajouter une méthode pour mettre à jour des champs spécifiques du profil utilisateur si nécessaire.
   // Ex: updateProfileFields({required String uid, String? firstName, bool? isReceiver, ...})
+  // Cette méthode pourrait aussi être modifiée pour prendre un objet UserProfile et
+  // ne mettre à jour que les champs qui ont changé, ou une map partielle.
   Future<void> updateUserProfileFields({
     required String uid,
     String? firstName,
@@ -200,6 +198,9 @@ class FirestoreService {
 
 // Ajout: Méthode pour appairer deux utilisateurs
 // Cette implémentation est similaire à _pairUsers dans main.dart mais fait partie du service.
+
+// ➡️ SUITE du fichier lib/services/firestore_service.dart
+
 // Elle doit être appelée avec les UID des deux utilisateurs
   Future<void> pairUsers({required String userAId, required String userBId}) async {
     debugLog("🔄 [FirestoreService - pairUsers] Tentative d'appairage entre UID $userAId et UID $userBId", level: 'INFO');
@@ -256,14 +257,13 @@ class FirestoreService {
 
 // Prépare les données pour le document Recipient chez B
       batch.set(recipientBDocRef, {
-          'id': userAId, // Inclure l'UID aussi comme champ
-          'displayName': userADisplayName, // Le nom de l'utilisateur A vu par B
-          'icon': '💌', // Icône par défaut - TODO: Permettre de définir l'icône
-          'relation': 'relation_partner', // Relation par défaut - TODO: Utiliser une clé i18n ou un enum
+        'id': userAId, // Inclure l'UID aussi comme champ
+        'displayName': userADisplayName, // Le nom de l'utilisateur A vu par B
+        'icon': '💌', // Icône par défaut - TODO: Permettre de définir l'icône
+        'relation': 'relation_partner', // Relation par défaut - TODO: Utiliser une clé i18n ou un enum
         'allowedPacks': [], // Packs par défaut - TODO: Définir les packs initiaux
         'paired': true, // Marqué comme appairé
         'catalogType': 'partner', // Type de catalogue par défaut - TODO: Utiliser un enum
-// 📄 SUITE de lib/services/firestore_service.dart
         'createdAt': FieldValue.serverTimestamp(), // Horodatage de création
         // Ajouter lastMessageText, lastMessageTimestamp pour la liste des conversations ?
         // 'lastMessageText': '',
@@ -360,65 +360,6 @@ class FirestoreService {
       rethrow;
     }
   }
-
-// ⛔️ À supprimer — Implémentation unilatérale — 2025/06/10
-//   // Ajout: Méthode pour mettre à jour les données d'un destinataire spécifique (pour l'utilisateur appelant)
-//   // Utile pour sauvegarder les modifications faites dans EditRecipientScreen.
-//   Future<void> updateRecipient({required String userId, required Recipient recipient}) async {
-//     debugLog("📝 [FirestoreService - updateRecipient] Tentative de mise à jour du destinataire ${recipient.id} pour l'UID : $userId", level: 'INFO');
-//     if (userId.isEmpty || recipient.id.isEmpty) {
-//       debugLog("⚠️ [FirestoreService - updateRecipient] UID utilisateur ou destinataire vide. Mise à jour annulée.", level: 'WARN');
-//       throw ArgumentError("Invalid user or recipient ID for update."); // Lancer une erreur
-//     }
-//     try {
-//       // Obtient une référence au document spécifique du destinataire
-//       DocumentReference recipientDocRef = _firestore
-//           .collection('users')
-//           .doc(userId) // UID de l'utilisateur actuel
-//           .collection('recipients')
-//           .doc(recipient.id); // UID du destinataire
-//
-//       // Utilise update() pour modifier les champs. update() échoue si le document n'existe pas.
-//       // Si vous voulez créer/mettre à jour (upsert), utilisez set(..., merge: true).
-//       // Ici, update est approprié car le destinataire est censé exister après l'appairage.
-//       await recipientDocRef.update(recipient.toMap()); // Utilise toMap() du modèle Recipient
-//
-//       debugLog("✅ [FirestoreService - updateRecipient] Destinataire ${recipient.id} mis à jour avec succès pour l'UID $userId.", level: 'SUCCESS');
-//
-//       // TODO: Optionnel : Si vous voulez que le nom/icône/relation change aussi chez l'autre utilisateur (vue miroir),
-//       // implémentez ici la logique de mise à jour bidirectionnelle pour les champs pertinents.
-//       // Cela nécessiterait une écriture similaire dans le document users/{recipient.id}/recipients/{userId}.
-//       /*
-//               // Exemple de mise à jour bidirectionnelle du nom (displayName)
-//                DocumentReference otherUserRecipientDocRef = _firestore
-//                    .collection('users').doc(recipient.id) // UID du destinataire
-//                    .collection('recipients').doc(userId); // UID de l'utilisateur actuel dans sa liste
-//                await otherUserRecipientDocRef.update({
-//                    'displayName': recipient.displayName, // Mettre à jour le nom chez l'autre utilisateur
-//                    // Ajouter d'autres champs comme 'icon', 'relation' si vous voulez les synchroniser aussi
-//                });
-//                debugLog("✅ [FirestoreService - updateRecipient] Nom/champs mis à jour dans la collection miroir chez UID ${recipient.id}");
-//               */
-//
-//     } on FirebaseException catch (e) { // Gère les erreurs spécifiques à Firebase
-//       debugLog(
-//         '❌ [FirestoreService - updateRecipient] Erreur Firebase lors de la mise à jour destinataire ${recipient.id} pour l\'UID $userId : ${e.code} - ${e.message}',
-//         level: 'ERROR',
-//       );
-//       // Gérer l'erreur 'not-found' si le document destinataire n'existe pas (ex: supprimé par l'autre utilisateur)
-//       if (e.code == 'not-found') {
-//         debugLog("⚠️ [FirestoreService - updateRecipient] Document destinataire ${recipient.id} non trouvé pour mise à jour pour l'UID $userId.", level: 'WARN');
-//         // Peut-être lancer une erreur spécifique ou retourner false si l'appelant doit savoir que le document n'existe plus.
-//       }
-//       rethrow; // Rethrow l'exception
-//     } catch (e) { // Gère toute autre erreur inattendue
-//       debugLog(
-//         '❌ [FirestoreService - updateRecipient] Erreur inattendue lors de la mise à jour destinataire ${recipient.id} pour l\'UID $userId : $e',
-//         level: 'ERROR',
-//       );
-//       rethrow;
-//     }
-//   }
 
   // ✅ Étape 5 / 2.4 : Ajouter la logique pour obtenir un stream du profil utilisateur
   // Fournit un stream en temps réel des changements sur le document /users/{uid}.
@@ -634,7 +575,11 @@ class FirestoreService {
          batch.update(senderRecipientDocRef, {
              'lastMessageTimestamp': message.sentAt,
              'lastMessageText': message.content, // Ou un aperçu du message
-             // Vous pouvez aussi ajouter un champ 'unreadCount' et l'incrémenter chez le destinataire
+             // Vous pouvez aussi ajouter un champ 'unreadCount' et l'inc
+
+// ➡️ SUITE du fichier lib/services/firestore_service.dart
+
+             // rémenter chez le destinataire
          });
 
          // Mettre à jour le dernier message chez le destinataire (pour sa vue)
@@ -648,7 +593,6 @@ class FirestoreService {
              // 'unreadCount': FieldValue.increment(1), // Nécessite que le champ existe et soit un nombre
          });
          */
-
 
       // Exécute le batch d'écritures de manière atomique (message + potentiellement les mises à jour de lastMessage)
       await batch.commit();
@@ -693,7 +637,6 @@ class FirestoreService {
        // Optionnel: Réinitialiser un champ 'unreadCount' dans le document recipient de l'utilisateur qui marque comme vu.
    }
   */
-
 
 // TODO: Ajouter une méthode pour supprimer UN message spécifique (pour l'utilisateur appelant, et potentiellement en miroir chez l'autre)
 /*

@@ -14,6 +14,8 @@
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V008 - Suppression des TODOs obsolètes liés à la sauvegarde et à la gestion initiale du profil. - 2025/06/17 19h58
+// V007 - Adaptation de l'appel à saveUserProfile dans loadUserProfile pour utiliser l'argument nommé profile. - 2025/06/17 19h04
 // V006 - Implémentation logique gestion cycle de vie (écoute authStateChanges, méthodes _startAuthListener, _cancelAuthListener, _authStateSubscription). Appel de loadUserProfile, _startProfileSubscription, clearUserProfile et _cancelProfileSubscription selon l'état d'authentification. Appel _startAuthListener dans init(). - 2025/06/14 00h15 (Heure à remplir)
 // V005 - Ajout logique gestion cycle de vie (écoute authStateChanges, méthodes _startAuthListener, _cancelAuthListener, _authStateSubscription). Appel de loadUserProfile, _startProfileSubscription, clearUserProfile et _cancelProfileSubscription selon l'état d'authentification. - 2025/06/13 23h51
 // V004 - Ajout logique synchronisation profil (listener Firestore, méthodes _startProfileSubscription, _cancelProfileSubscription, _profileSubscription). - 2025/06/13 23h50
@@ -95,7 +97,7 @@ class CurrentUserService {
     _setUserProfile(null); // Met le profil à null
   }
 
-  // ✅ Étape 2.3 : Logique de chargement initial du profil depuis Firestore (inchangé)
+  // ✅ Étape 2.3 : Logique de chargement initial du profil depuis Firestore
   // Cette méthode est responsable de lire le document '/users/{uid}' pour l'utilisateur courant
   // et de mettre à jour le _userProfileNotifier.
   // Elle sera appelée lors des changements d'état d'authentification (Étape 2.5).
@@ -120,26 +122,43 @@ class CurrentUserService {
         // ✅ MODIF (Étape 2.5) : Démarrer l'écoute des mises à jour après le chargement initial réussi
         _startProfileSubscription(); // Démarrer le listener maintenant
       } else {
-        debugLog('⚠️ [CurrentUserService - loadUserProfile] Document profil non trouvé pour UID: $uid. Création d\'un profil par défaut.', level: 'WARNING');
+        debugLog('⚠️ [CurrentUserService - loadUserProfile] Document profil non trouvé pour UID: $uid. Création et sauvegarde d\'un profil par défaut.', level: 'WARNING'); // ✅ MODIF log
+
         // Le document utilisateur n'existe pas encore. Créer un profil de base et le sauvegarder.
         UserProfile defaultProfile = UserProfile(
           uid: uid,
           firstName: 'Nouveau', // Nom par défaut
-          isReceiver: false,    // Rôle par défaut
+          isReceiver: false,    // Rôle par default
           // TODO: Récupérer la langue du système ou une langue par défaut plus intelligente (Étape 2.3.1)
-          deviceLang: 'en', // Langue par défaut
+          deviceLang: PlatformDispatcher.instance.locale.languageCode, // ✅ MODIF: Utiliser la langue du système comme défaut initial
         );
-        _setUserProfile(defaultProfile);
+        _setUserProfile(defaultProfile); // Met le profil par défaut dans le notifier
         debugLog('✅ [CurrentUserService - loadUserProfile] Profil par défaut créé pour UID: $uid', level: 'INFO');
-        // TODO: Ajouter une logique pour sauvegarder ce profil par défaut si créé ici (Étape 2.3.2)
-        // await _firestoreService.saveUserProfile(uid: uid, email: FirebaseAuth.instance.currentUser!.email!, firstName: defaultProfile.firstName, isReceiver: defaultProfile.isReceiver);
+
+        // Sauvegarder le profil par défaut dans Firestore
+        try {
+          // Utilise le FirestoreService pour sauvegarder le profil
+          // Note : Il faut une méthode `saveUserProfile` ou équivalente dans FirestoreService
+          // qui prend un UserProfile et le sauvegarde.
+          // L'ancienne méthode commentée dans ton code de main.dart `_firestoreService.saveUserProfile(uid: uid, email: FirebaseAuth.instance.currentUser!.email!, firstName: defaultProfile.firstName, isReceiver: defaultProfile.isReceiver);`
+          // n'est pas idéale car elle prend des champs séparés. Il vaut mieux passer l'objet UserProfile.
+          // Supposons qu'une méthode `saveUserProfile(UserProfile profile)` existe dans FirestoreService.
+          await _firestoreService.saveUserProfile(profile: defaultProfile); // ✅ MODIF V007 : Sauvegarde du profil par défaut en utilisant l'argument nommé
+          debugLog('✅ [CurrentUserService - loadUserProfile] Profil par défaut sauvegardé dans Firestore pour UID: $uid', level: 'INFO');
+        } catch (saveError) {
+          debugLog('❌ [CurrentUserService - loadUserProfile] Erreur lors de la sauvegarde du profil par défaut pour UID $uid: $saveError', level: 'ERROR');
+          // L'erreur de sauvegarde est distincte de l'erreur de chargement.
+          // Le profil est dans le notifier, mais pas en base.
+          // TODO: Gérer cette erreur de sauvegarde spécifiquement (Étape 2.3.4)
+        }
+
         // Démarrer le listener même si on vient de créer le document.
         _startProfileSubscription(); // Démarrer le listener maintenant
       }
     } catch (e) {
       debugLog('❌ [CurrentUserService - loadUserProfile] Erreur lors du chargement initial du profil pour UID $uid: $e', level: 'ERROR');
       _setUserProfile(null); // Assure que le profil est null en cas d'erreur
-      // TODO: Gérer l'erreur (ex: afficher un message à l'utilisateur ?) (Étape 2.3.3)
+      // TODO: Gérer l'erreur de chargement (ex: afficher un message à l'utilisateur ?) (Étape 2.3.3)
     }
   }
 
@@ -213,7 +232,6 @@ class CurrentUserService {
     // Annule toute souscription existante avant d'en démarrer une nouvelle
     _cancelAuthListener(); // Assure qu'un seul listener d'auth est actif
 
-    // TODO: Annuler le listener de profil aussi en cas de redémarrage du listener d'auth ? _cancelProfileSubscription();
     // Si le listener d'auth est relancé, on veut s'assurer que l'ancien listener de profil est bien arrêté.
     // _cancelProfileSubscription(); // <- À appeler ici ? Ou seulement dans clearUserProfile ?
     // La logique est : si l'état change (ex: déconnexion), clearUserProfile est appelé qui annule le listener profil.
@@ -228,13 +246,11 @@ class CurrentUserService {
       if (user != null) {
         // Utilisateur connecté. Charger/Synchroniser son profil.
         debugLog('👤 [CurrentUserService - _startAuthListener] Changement d\'état: Utilisateur connecté (UID: ${user.uid}).', level: 'INFO');
-        // TODO: Gérer le cas où l'utilisateur est déjà connecté au démarrage (getInitialUser() ou équivalent) (Étape 2.5.1)
         // loadUserProfile() est appelé pour un chargement unique. Pour la synchronisation continue, _startProfileSubscription est préférable.
         // On peut appeler loadUserProfile() la première fois qu'un utilisateur se connecte APRÈS l'initialisation de l'app,
         // puis _startProfileSubscription() pour les mises à jour. Ou simplement toujours _startProfileSubscription().
         // L'approche avec listener est plus réactive. Utilisons directement _startProfileSubscription().
         _startProfileSubscription(); // Démarre l'écoute en temps réel du profil.
-        // TODO: Gérer l'affichage du profil par défaut si le document n'existe pas encore lors de la première connexion. (Étape 2.3.1, 2.3.2)
 
       } else {
         // Utilisateur déconnecté. Nettoyer le profil.
@@ -263,46 +279,9 @@ class CurrentUserService {
     }
   }
 
-
 // TODO: Ajouter la logique pour sauvegarder les modifications du profil utilisateur (Étape 2.6/5)
 // Future<void> saveUserProfileChanges(UserProfile profile) async { ... }
 // Utiliserait _firestoreService.saveUserProfile ou updateUserProfileFields
-
-// Ancienne structure du service (champs individuels et setUserData) (inchangé - toujours commenté)
-// ⛔️ À supprimer — Remplacée par la gestion de UserProfile et ValueNotifier — 2025/06/13
-/*
-        // ⭐️ Étape 2 (Ancienne) : Déclarer les champs pour stocker les données utilisateur
-        // Utilise 'late' car ces champs seront initialisés plus tard par setUserData.
-        // Utilise nullable String pour displayName car il peut être absent.
-        late bool _isReceiver;
-        late String _deviceLang;
-        String? _displayName; // displayName peut être nullable
-
-          // ⭐️ Étape 3 (Ancienne) : Définir une méthode pour initialiser/mettre à jour les données
-        void setUserData({
-          required bool isReceiver,
-          required String deviceLang,
-          String? displayName, // Accepte un displayName nullable
-        }) {
-          _isReceiver = isReceiver;
-          _deviceLang = deviceLang;
-          _displayName = displayName;
-          // Optionnel: ajouter un log pour confirmer que les données sont définies
-          // print('✅ CurrentUserService initialisé/mis à jour : isReceiver=$_isReceiver, deviceLang=$_deviceLang, displayName=$_displayName');
-        }
-
-        // ⭐️ Étape 4 (Ancienne) : Définir les getters publics pour accéder aux données
-        // Utilise 'instance' pour accéder aux getters : CurrentUserService.instance.isReceiver
-        // bool get isReceiver => _isReceiver; // Commented out or removed in V002
-        // String get deviceLang => _deviceLang; // Commented out or removed in V002
-        // String? get displayName => _displayName; // Commented out or removed in V002
-
-        // Optionnel (Ancienne): Ajouter une méthode pour vérifier si les données sont initialisées
-        // bool get isInitialized => ::_isReceiver != null && _deviceLang != null; // Commented out or removed in V002
-        // Note: Avec 'late', l'accès avant initialisation lèvera une LateInitializationError.
-        // Si tu veux éviter ça, utilise des champs nullable (bool?, String?) et gère les nulls dans les getters ou à l'appel.
-        // Pour une approche lean post-auth flow, 'late' est acceptable si HomeSelector garantit l'appel à setUserData.
-        */ // ⛔️ FIN du bloc à supprimer — 2025/06/13
 
 } // <-- Fin de la classe CurrentUserService
 
