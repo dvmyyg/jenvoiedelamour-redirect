@@ -11,9 +11,11 @@
 // ✅ La logique de synchronisation des données via un listener Firestore est ajoutée (Étape 2.4).
 // ✅ La gestion du cycle de vie (en fonction de l'état d'authentification) est ajoutée (Étape 2.5).
 // ✅ Reçoit l'instance de FirestoreService via injection de dépendances.
+// ✅ Permet la sauvegarde des modifications du profil utilisateur dans Firestore (Étape 2.6/5).
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V009 - Ajout de la méthode saveUserProfileChanges pour sauvegarder un UserProfile modifié. - 2025/06/17 21h00
 // V008 - Suppression des TODOs obsolètes liés à la sauvegarde et à la gestion initiale du profil. - 2025/06/17 19h58
 // V007 - Adaptation de l'appel à saveUserProfile dans loadUserProfile pour utiliser l'argument nommé profile. - 2025/06/17 19h04
 // V006 - Implémentation logique gestion cycle de vie (écoute authStateChanges, méthodes _startAuthListener, _cancelAuthListener, _authStateSubscription). Appel de loadUserProfile, _startProfileSubscription, clearUserProfile et _cancelProfileSubscription selon l'état d'authentification. Appel _startAuthListener dans init(). - 2025/06/14 00h15 (Heure à remplir)
@@ -279,9 +281,46 @@ class CurrentUserService {
     }
   }
 
-// TODO: Ajouter la logique pour sauvegarder les modifications du profil utilisateur (Étape 2.6/5)
-// Future<void> saveUserProfileChanges(UserProfile profile) async { ... }
-// Utiliserait _firestoreService.saveUserProfile ou updateUserProfileFields
+  // ✅ AJOUT V009 : Méthode pour sauvegarder les modifications du profil utilisateur
+  // Appelée par les couches supérieures (ex: UI) pour enregistrer les changements.
+  Future<void> saveUserProfileChanges(UserProfile profile) async {
+    final uid = currentUid;
+    // Vérifie si l'utilisateur est connecté et si le profil fourni correspond à l'utilisateur actuel
+    if (uid == null || profile.uid != uid) {
+      debugLog('⚠️ [CurrentUserService - saveUserProfileChanges] Tentative de sauvegarder un profil sans utilisateur connecté ou pour un UID non correspondant.', level: 'WARN');
+      // Optionnel: Lancer une erreur ou retourner un indicateur d'échec
+      throw StateError("Cannot save profile changes: User not logged in or UID mismatch.");
+    }
+
+    debugLog("🔄 [CurrentUserService - saveUserProfileChanges] Tentative de sauvegarde des modifications du profil pour l'UID : ${profile.uid}", level: 'INFO');
+
+    try {
+      // Utilise le FirestoreService pour mettre à jour le document utilisateur
+      await _firestoreService.updateProfile(profile: profile); // Utilise la nouvelle méthode dans FirestoreService
+
+      debugLog(
+        '✅ [CurrentUserService - saveUserProfileChanges] Modifications du profil utilisateur sauvegardées pour UID: ${profile.uid}',
+        level: 'SUCCESS',
+      );
+      // Note : Le listener dans _startProfileSubscription mettra automatiquement à jour le _userProfileNotifier
+      // avec les données fraîchement sauvegardées depuis Firestore, assurant la synchronisation.
+
+    } on FirebaseException catch (e) {
+      debugLog(
+        '❌ [CurrentUserService - saveUserProfileChanges] Erreur Firebase lors de la sauvegarde des modifications pour l\'UID ${profile.uid} : ${e.code} - ${e.message}',
+        level: 'ERROR',
+      );
+      // TODO: Gérer l'erreur de sauvegarde spécifiquement (ex: afficher un message à l'utilisateur) (Étape 2.6.1)
+      rethrow; // Rethrow l'exception pour gestion par l'appelant
+    } catch (e) {
+      debugLog(
+        '❌ [CurrentUserService - saveUserProfileChanges] Erreur inattendue lors de la sauvegarde des modifications pour l\'UID ${profile.uid} : $e',
+        level: 'ERROR',
+      );
+      // TODO: Gérer l'erreur inattendue (Étape 2.6.1)
+      rethrow; // Rethrow l'exception
+    }
+  }
 
 } // <-- Fin de la classe CurrentUserService
 

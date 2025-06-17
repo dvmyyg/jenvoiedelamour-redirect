@@ -13,6 +13,7 @@
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V012 - Ajout de la méthode updateProfile pour sauvegarder un UserProfile modifié. - 2025/06/17 20h39
 // V011 - Suppression des blocs de code marqués ⛔️ À supprimer. - 2025/06/17 19h25
 // V010 - Correction de l'appel de méthode toMap() à toFirestore() dans saveUserProfile. - 2025/06/17 18h58
 // V009 - Modification de saveUserProfile pour accepter un objet UserProfile. Utilisation de toMap() du modèle. Mise à jour des logs. - 2025/06/17 13h44
@@ -182,6 +183,46 @@ class FirestoreService {
     }
   }
 
+// ✅ AJOUT V012 : Méthode pour mettre à jour le profil utilisateur à partir d'un objet UserProfile
+  // Utilisée pour sauvegarder les modifications faites par l'utilisateur sur son propre profil.
+  Future<void> updateProfile({required UserProfile profile}) async {
+    debugLog("🔄 [FirestoreService - updateProfile] Tentative de mise à jour du profil pour l'UID : ${profile.uid}", level: 'INFO');
+    try {
+      // Obtient une référence au document utilisateur
+      DocumentReference userDocRef = _firestore.collection('users').doc(profile.uid);
+
+      // Prépare les données à sauvegarder (utilise toFirestore() du modèle UserProfile)
+      Map<String, dynamic> dataToUpdate = profile.toFirestore();
+
+      // On utilise update() car ce document est censé déjà exister (créé lors du premier chargement ou de l'inscription).
+      // Si l'on voulait aussi gérer le cas où le document pourrait manquer et le créer (upsert),
+      // on utiliserait set(dataToUpdate, SetOptions(merge: true)).
+      // Pour la mise à jour, update() est plus approprié car il lèvera une erreur si le document n'est pas trouvé,
+      // ce qui pourrait signaler un problème.
+      await userDocRef.update(dataToUpdate);
+
+      debugLog(
+        '✅ [FirestoreService - updateProfile] Profil utilisateur mis à jour pour UID: ${profile.uid} (${profile.firstName})',
+        level: 'SUCCESS',
+      );
+    } on FirebaseException catch (e) {
+      debugLog(
+        '❌ [FirestoreService - updateProfile] Erreur Firebase lors de la mise à jour du profil pour l\'UID ${profile.uid} : ${e.code} - ${e.message}',
+        level: 'ERROR',
+      );
+      // Gérer l'erreur 'not-found' si le document utilisateur n'existe pas
+      if (e.code == 'not-found') {
+        debugLog("⚠️ [FirestoreService - updateProfile] Document utilisateur ${profile.uid} non trouvé pour mise à jour. Il devrait exister.", level: 'WARN');
+      }
+      rethrow; // Rethrow l'exception pour gestion par l'appelant
+    } catch (e) {
+      debugLog(
+        '❌ [FirestoreService - updateProfile] Erreur inattendue lors de la mise à jour du profil pour l\'UID ${profile.uid} : $e',
+        level: 'ERROR',
+      );
+      rethrow; // Rethrow l'exception
+    }
+  }
 
 // =============================================================
 // 🤝 DESTINATAIRES — Gestion des destinataires
