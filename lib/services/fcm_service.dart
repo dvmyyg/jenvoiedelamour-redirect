@@ -288,8 +288,6 @@ class FcmService {
     // Cette méthode n'est qu'une référence interne dans le service.
     // debugLog('🔔 [FCM Service - NOTIF CLICK BG REF] Handler top-level appelé (référence interne).', level: 'DEBUG');
   }
-
-
 } // <-- Fin de la classe FcmService
 
 // 📄 FIN de lib/services/fcm_service.dart

@@ -8,9 +8,11 @@
 // ✅ Fournit des méthodes pour récupérer, ajouter, mettre à jour et supprimer des destinataires.
 // ✅ Utilise l'UID Firebase du destinataire comme identifiant des documents dans la sous-collection 'recipients'.
 // ✅ Utilise les logs internes via DebugLog.
+// ✅ Dépend de FirestoreService pour certaines opérations de lecture et suppression.
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V004 - Refactor des méthodes streamPairedRecipients, getRecipient, deleteRecipient pour utiliser FirestoreService. - 2025/06/18 13h30
 // V003 - Ajout de la gestion d'erreurs (try/catch avec FirebaseException) pour les opérations Firestore. - 2025/05/30
 // V002 - Remplacement de deviceId par l'UID de l'utilisateur authentifié pour l'accès Firestore (users/{userId}/recipients). Adaptation des requêtes. - 2025/05/29
 // V001 - Version initiale (basée sur deviceId)
@@ -21,31 +23,42 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/recipient.dart'; // Utilise le modèle Recipient refactorisé
 import '../utils/debug_log.dart';
+import 'firestore_service.dart'; // ✅ AJOUT V004 : Import de FirestoreService
 
 class RecipientService {
-  // L'identifiant de l'utilisateur actuel est maintenant son UID Firebase
+  // L'identifiant de l'utilisateur actuel (son UID Firebase)
   final String currentUserId;
 
   // Référence à l'instance Firestore (initialisée une fois pour le service)
-  final FirebaseFirestore _firestore;
+  // ⛔️ À supprimer — Remplacé par l'injection de FirestoreService — 2025/06/18
+  // final FirebaseFirestore _firestore;
+  // ⛔️ FIN du bloc à supprimer — 2025/06/18
 
-  // Le service est initialisé avec l'UID de l'utilisateur
-  RecipientService(this.currentUserId)
-      : _firestore = FirebaseFirestore.instance; // Initialise l'instance Firestore ici
+  // ✅ AJOUT V004 : Champ pour l'instance injectée de FirestoreService
+  final FirestoreService _firestoreService;
+
+
+  // Le service est initialisé avec l'UID de l'utilisateur et FirestoreService
+  // 🔄 MODIF V004 : Ajout de la dépendance à FirestoreService
+  RecipientService(this.currentUserId, {required FirestoreService firestoreService})
+      : _firestoreService = firestoreService; // Initialise l'instance FirestoreService
+
 
   // Référence à la sous-collection des destinataires pour l'utilisateur actuel, basée sur son UID
-  CollectionReference get _recipientsRef => _firestore
+  // Cette référence n'est plus utilisée directement pour les opérations déplacées vers FirestoreService
+  // mais peut rester pour les méthodes qui n'ont pas encore été refactorées (fetch, add, update unilatéraux).
+  CollectionReference get _recipientsRef => FirebaseFirestore.instance
       .collection('users') // Collection de premier niveau basée sur l'UID
       .doc(currentUserId) // Document de l'utilisateur actuel (UID)
       .collection('recipients'); // Sous-collection des destinataires de l'utilisateur actuel
 
-  // ✅ Récupérer les destinataires appairés pour l'utilisateur actuel
+
+  // ✅ Récupérer les destinataires appairés pour l'utilisateur actuel (méthode asynchrone snapshot unique)
+  // Cette méthode utilise toujours l'accès direct à Firestore pour l'instant.
   Future<List<Recipient>> fetchRecipients() async {
     debugLog("🔄 [fetchRecipients] Chargement des destinataires pour l'utilisateur : $currentUserId");
     try {
       final snapshot = await _recipientsRef
-      // On filtre maintenant sur le champ 'paired' qui est plus sémantique
-      // L'ancien filtre .where('deviceId', isNotEqualTo: null) est supprimé
           .where('paired', isEqualTo: true) // ✅ filtre : uniquement ceux qui sont appairés
           .get();
 
@@ -78,11 +91,12 @@ class RecipientService {
     }
   }
 
-  // ✅ Ajouter un destinataire (pour l'utilisateur actuel)
+  // ✅ Ajouter un destinataire (pour l'utilisateur actuel) (méthode unilatérale set avec merge)
+  // Cette méthode utilise toujours l'accès direct à Firestore pour l'instant.
   // Le recipient.id doit être l'UID de l'autre utilisateur.
   // Utilise set() avec merge: true pour éviter d'écraser d'autres champs si le document existe déjà.
   Future<void> addRecipient(Recipient recipient) async {
-    debugLog("📝 [addRecipient] Tentative d'ajout d'un destinataire pour $currentUserId : ${recipient.displayName} (UID: ${recipient.id})");
+    debugLog("📝 [addRecipient] Tentative d'ajout d'un destinataire pour $currentUserId : ${recipient.displayName} (UID: ${recipient.id})"); // ✅ CORRECTION SYNTAXE
     if (recipient.id.isEmpty) {
       debugLog("⚠️ [addRecipient] UID destinataire vide. Ajout annulé.", level: 'WARN');
       // Optionnel: Lancer une exception ici.
@@ -110,7 +124,8 @@ class RecipientService {
     }
   }
 
-  // ✅ Mettre à jour un destinataire (pour l'utilisateur actuel)
+  // ✅ Mettre à jour un destinataire (pour l'utilisateur actuel) (méthode unilatérale update)
+  // Cette méthode utilise toujours l'accès direct à Firestore pour l'instant.
   // Le recipient.id doit être l'UID de l'autre utilisateur
   Future<void> updateRecipient(Recipient recipient) async {
     debugLog("📝 [updateRecipient] Tentative de mise à jour du destinataire pour $currentUserId : ${recipient.displayName} (UID: ${recipient.id})");
@@ -146,7 +161,8 @@ class RecipientService {
     }
   }
 
-  // ✅ Supprimer un destinataire (pour l'utilisateur actuel)
+  // ✅ MODIF V004 : Supprimer un destinataire (pour l'utilisateur actuel)
+  // Cette méthode utilise maintenant FirestoreService.
   // L'id doit être l'UID de l'autre utilisateur
   Future<void> deleteRecipient(String recipientUserId) async {
     debugLog("🗑️ [deleteRecipient] Tentative de suppression du destinataire $recipientUserId pour l'utilisateur : $currentUserId");
@@ -156,53 +172,40 @@ class RecipientService {
       return;
     }
     try {
-      // recipientUserId est l'UID de l'autre utilisateur
-      await _recipientsRef.doc(recipientUserId).delete();
-      debugLog("✅ [deleteRecipient] Destinataire $recipientUserId supprimé pour $currentUserId");
+      // ✅ Utilise le FirestoreService injecté pour supprimer le destinataire
+      await _firestoreService.deleteRecipient(userId: currentUserId, recipientId: recipientUserId);
+      debugLog("✅ [deleteRecipient] Destinataire $recipientUserId supprimé pour $currentUserId via FirestoreService");
     } on FirebaseException catch (e) {
       debugLog(
-        "❌ [deleteRecipient] Erreur Firebase lors de la suppression destinataire $recipientUserId pour $currentUserId : ${e.code} - ${e.message}",
+        "❌ [deleteRecipient] Erreur Firebase lors de la suppression destinataire $recipientUserId pour $currentUserId via FirestoreService : ${e.code} - ${e.message}",
         level: 'ERROR',
       );
       // Gérer l'erreur "document n'existe pas" si nécessaire
       if (e.code == 'not-found') {
-        debugLog("⚠️ [deleteRecipient] Document destinataire $recipientUserId non trouvé pour suppression.", level: 'WARN');
+        debugLog("⚠️ [deleteRecipient] Document destinataire $recipientUserId non trouvé pour suppression via FirestoreService.", level: 'WARN');
         // Optionnel: Gérer ce cas spécifiquement.
       }
       rethrow;
     } catch (e) {
       debugLog(
-        "❌ [deleteRecipient] Erreur inattendue lors de la suppression destinataire $recipientUserId pour $currentUserId : $e",
+        "❌ [deleteRecipient] Erreur inattendue lors de la suppression destinataire $recipientUserId pour $currentUserId via FirestoreService : $e",
         level: 'ERROR',
       );
       rethrow;
     }
   }
 
-  // TODO: Ajouter une méthode pour obtenir un stream des destinataires appairés (pour l'UI en temps réel)
-  // Similaire à fetchRecipients mais utilisant .snapshots() au lieu de .get().
-  // Cela serait la méthode préférée pour afficher la liste des destinataires dans une UI réactive.
-
+  // ✅ MODIF V004 : Ajouter une méthode pour obtenir un stream des destinataires appairés (pour l'UI en temps réel)
+  // Cette méthode utilise maintenant FirestoreService.
   Stream<List<Recipient>> streamPairedRecipients() {
     debugLog("🔄 [streamPairedRecipients] Ouverture du flux des destinataires appairés pour l'UID : $currentUserId", level: 'INFO');
-    return _recipientsRef
-        .where('paired', isEqualTo: true)
-    // Optionnel: ajouter orderBy
-    // .orderBy('displayName')
-        .snapshots()
-        .map((snapshot) {
-      debugLog("📩 [streamPairedRecipients] Réception de ${snapshot.docs.length} documents destinataires appairés pour $currentUserId", level: 'DEBUG');
-      return snapshot.docs.map((doc) {
-        return Recipient.fromMap(doc.id, doc.data() as Map<String, dynamic>);
-      }).toList();
-    })
-        .handleError((e) {
-      debugLog("❌ [streamPairedRecipients] Erreur lors de l'écoute des destinataires appairés pour UID $currentUserId : $e", level: 'ERROR');
-      return <Recipient>[];
-    });
+    // ✅ Utilise le FirestoreService injecté pour obtenir le stream
+    // Note: FirestoreService.streamRecipients inclut déjà le filtre 'paired: true' et le mapping en List<Recipient>
+    return _firestoreService.streamRecipients(currentUserId);
   }
 
-  // TODO: Ajouter une méthode pour obtenir UN destinataire spécifique par son UID (pour l'écran de détails par exemple)
+  // ✅ MODIF V004 : Ajouter une méthode pour obtenir UN destinataire spécifique par son UID (pour l'écran de détails par exemple)
+  // Cette méthode utilise maintenant FirestoreService.
   Future<Recipient?> getRecipient(String recipientUid) async {
     debugLog("🔄 [getRecipient] Tentative de chargement du destinataire $recipientUid pour l'UID : $currentUserId", level: 'INFO');
     if (recipientUid.isEmpty) {
@@ -210,24 +213,17 @@ class RecipientService {
       return null;
     }
     try {
-      final doc = await _recipientsRef.doc(recipientUid).get();
-
-      if (doc.exists) {
-        debugLog("✅ Destinataire $recipientUid trouvé pour l'UID $currentUserId");
-        return Recipient.fromMap(doc.id, doc.data()! as Map<String, dynamic>);
-      } else {
-        debugLog("⚠️ Pas de document destinataire $recipientUid trouvé pour l'UID $currentUserId", level: 'WARNING');
-        return null;
-      }
+      // ✅ Utilise le FirestoreService injecté pour obtenir le destinataire
+      // FirestoreService.getRecipient retourne Recipient?
+      return await _firestoreService.getRecipient(userId: currentUserId, recipientId: recipientUid);
     } on FirebaseException catch (e) {
-      debugLog("❌ [getRecipient] Erreur Firebase lors du chargement destinataire $recipientUid pour l'UID $currentUserId : ${e.code} - ${e.message}", level: 'ERROR');
+      debugLog("❌ [getRecipient] Erreur Firebase lors du chargement destinataire $recipientUid pour l'UID $currentUserId via FirestoreService : ${e.code} - ${e.message}", level: 'ERROR');
       rethrow;
     } catch (e) {
-      debugLog("❌ [getRecipient] Erreur inattendue lors du chargement destinataire $recipientUid pour l'UID $currentUserId : $e", level: 'ERROR');
+      debugLog("❌ [getRecipient] Erreur inattendue lors du chargement destinataire $recipientUid pour l'UID $currentUserId via FirestoreService : $e", level: 'ERROR');
       rethrow;
     }
   }
-
 }
 
 // 📄 FIN de lib/services/recipient_service.dart
