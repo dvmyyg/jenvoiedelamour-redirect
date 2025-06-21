@@ -50,7 +50,7 @@ import 'dart:async'; // Import nécessaire pour DateTime
 // (qui pourrait utiliser CurrentUserService) est déléguée au NotificationRouter,
 // et les handlers de clic locaux gèrent la lecture directe depuis Firestore si nécessaire.
 
-// --- FIN   DU BLOC Imports --- // (Ajout d'un commentaire de fin de bloc pour clarté)
+// --- FIN   DU BLOC Imports ---
 
 // =============================================================
 // 🔐 TOKEN — Récupération et mise à jour
@@ -239,7 +239,6 @@ class FcmService {
       // L'app continuera son flux normal.
     }
   } // <-- Fin de la méthode _onDidReceiveNotificationResponse
-
 
 // =============================================================
 // 📲 NOTIFICATIONS LOCALES — Affichage (via FCM onMessage)

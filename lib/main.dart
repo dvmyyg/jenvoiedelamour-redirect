@@ -5,16 +5,18 @@
 // -------------------------------------------------------------
 // ✅ Point d'entrée principal de l'application Flutter.
 // ✅ Initialise Firebase et gère l'état d'authentification initial.
-// ✅ Initialise le conteneur d'injection de dépendances (get_it) et enregistre les services/ressources (incluant le plugin local notifications).
+// ✅ Initialise le conteneur d'injection de dépendances (get_it) et enregistre/initialise les services/ressources clés (incluant le plugin local notifications et CurrentUserService). // MODIF V021
 // ✅ Détermine l'écran initial affiché à l'utilisateur (Login, Email Verification, HomeSelector, PairSuccessScreen).
 // ✅ Gère les deep links d'appairage via app_links (déclenchement initial et stream).
 // ✅ Gère la langue du device via PlatformDispatcher et la passe à l'UI.
 // ✅ Enregistre le handler top-level FCM pour les messages background (_firebaseMessagingBackgroundHandler).
-// ✅ Enregistre le handler top-level pour les clics sur notifications background (onDidReceiveBackgroundNotificationResponse).
+// ✅ Enregistre le handler top-level pour les clics sur notifications background (onDidReceiveBackgroundNotificationResponse) et l'adapte pour utiliser les services injectés. // MODIF V021
 // ✅ Rend le NavigatorKey global accessible via le conteneur d'injection.
 // -------------------------------------------------------------
 // 🕓 HISTORIQUE DES MODIFICATIONS
 // -------------------------------------------------------------
+// V022 - Rendu onDidReceiveBackgroundNotificationResponse autonome pour l'initialisation de GetIt/services en état "terminé" et délégation de sa logique de navigation à NotificationRouter. Suppression des imports devenus inutilisés suite à la centralisation. - 2025/06/21 10h37
+// V021 - Modification de l'ordre d'initialisation dans main() pour initialiser explicitement CurrentUserService après GetIt et Firebase. Adaptation du handler background onDidReceiveBackgroundNotificationResponse pour utiliser les services injectés. Suppression des blocs de code marqués ⛔️ À supprimer dans main.dart. - 2025/06/21 09h40
 // V020 - Nettoyage du code commenté suite au déplacement de la logique FCM/Notifications locales vers FcmService. Suppression des déclarations locales inutilisées et des listeners/initialisations déplacés. - 2025/06/16 20h52
 // V019 - Utilisation de notification_config.dart pour la configuration des notifications locales. Suppression des constantes de configuration locales. - 2025/06/16 18h56
 // V018 - Commenté proprement la fonction pairUsers (devenue obsolète). Ajout d’un tag de dépréciation. Confirmation de la présence correcte du dispose(). Ajustement du plan d'action et vérification de la cohérence entre blocs. - 2025/06/13 19h50
@@ -37,13 +39,9 @@
 // V001 - Version initiale nécessitant correction prénom utilisateur. - 2025/05/23
 // -------------------------------------------------------------
 
-// GEM - code corrigé et historique mis à jour par Gémini le 2025/06/13 21h25
-// GEM - Import CurrentUserService commenté car plus utilisé dans main.dart - 2025/06/15
-
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Essentiel pour l'authentification basée sur l'utilisateur
 import 'package:app_links/app_links.dart'; // Reste pour gérer les deep links
 import 'dart:ui'; // Nécessaire pour PlatformDispatcher.instance.locale
@@ -65,14 +63,11 @@ import 'screens/email_verification_screen.dart'; // Écran de vérification pour
 import 'firebase_options.dart';
 import 'utils/debug_log.dart'; // Votre utilitaire de log
 
-import 'package:jelamvp01/models/recipient.dart'; // Importe le modèle Recipient
-import 'package:jelamvp01/screens/recipient_details_screen.dart'; // Importe l'écran de chat
-
 // TODO: Etape 2 - Réévaluer le rôle de CurrentUserService // Ce TODO reste pour la refacto future
 import 'package:jelamvp01/services/pairing_service.dart'; // ✅ AJOUT : Import de PairingService
 
 import 'package:jelamvp01/services/current_user_service.dart';
-import 'package:jelamvp01/models/user_profile.dart';
+import 'package:jelamvp01/navigation/notification_router.dart';
 
 // --- FIN   DU BLOC 01 ---
 
@@ -377,16 +372,6 @@ class _MyAppState extends State<MyApp> {
 
     }
 
-    // ⛔️ À supprimer - TODO obsolète, logique implémentée ci-dessous - 2025/06/13
-    // TODO: Ajouter ici la gestion des messages FCM reçus quand l'app est au premier plan (FirebaseMessaging.onMessage)
-    // et potentiellement la gestion du clic sur la notification quand l'app est ouverte par le clic (FirebaseMessaging.onMessageOpenedApp).
-    // Ces listeners peuvent être mis en place ici ou dans un service FCM dédié qui gère aussi le token.
-    // S'ils sont mis ici, assure-toi de les nettoyer (annuler la subscription) dans la méthode dispose().
-
-    // --- DÉBUT DU BLOC LISTENERS FCM ACTIFS ---
-    // Ces listeners gèrent les messages FCM quand l'app est au premier plan ou en arrière-plan actif.
-
-    // debugLog("🔔 FCM onMessageOpenedApp listener enregistré", level: 'INFO');
   } // <-- Fin de la méthode initState de _MyAppState
 
   // --- FIN   DU BLOC 08 ---
@@ -526,7 +511,7 @@ class PairSuccessScreen extends StatelessWidget {
 
 // --- FIN   DU BLOC 11 ---
 
-// --- DEBUT DU BLOC 12 ---
+// --- DEBUT DU BLOC 12 (REVISÉ) ---
 
 // TOP LEVEL FUNCTION: Recommandée pour la gestion des clics sur notifications locales depuis l'état TERMINÉ sur Android >= 13
 // Elle DOIT être déclarée en dehors de toute classe ou fonction
@@ -536,132 +521,60 @@ Future<void> onDidReceiveBackgroundNotificationResponse(
     NotificationResponse notificationResponse) async {
   debugLog("🔔 [MAIN - BG NOTIF CLICK] Clic sur notification (terminée, Android 13+). Payload: ${notificationResponse.payload}", level: 'INFO');
 
-  // Assurer que Firebase est initialisé, car cette fonction peut s'exécuter en dehors du contexte principal
-  // où main() a été appelé. Vérifier Firebase.apps.isEmpty est une bonne pratique pour éviter la double initialisation.
-  // On utilise un try-catch car cette initialisation pourrait échouer dans des cas extrêmes.
-  // ✅ MODIF V021 : S'assurer que GetIt et les services critiques (comme CurrentUserService qui dépend de FirestoreService)
-  // sont initialisés. Dans main(), nous avons garanti que CurrentUserService est initialisé tôt.
-  // Nous pouvons donc compter sur GetIt pour le fournir ici.
+  // --- ÉTAPE 1 : Assurer l'initialisation de Firebase et GetIt/Services ---
+  // C'est CRITIQUE, car cette fonction peut être appelée quand l'app est en état 'terminated',
+  // et donc main() n'a pas encore eu l'occasion d'initialiser Firebase et GetIt.
   try {
-    // ✅ AJOUT V021 : S'assurer que GetIt est configuré et les services critiques sont initialisés.
-    // Si cette fonction est appelée AVANT main(), cette vérification peut échouer.
-    // Dans un scénario robuste, tu initialiserais GetIt et les services critiques ICI AUSSI si !getIt.isRegistered<CurrentUserService>().
-    // Pour un MVP, on suppose que main() a été appelé et a configuré GetIt et les services critiques.
-    debugLog("🖙 [MAIN - BG NOTIF CLICK] Vérification GetIt et services essentiels initialisés...", level: 'DEBUG');
-    // Tenter d'accéder à des services pour vérifier l'initialisation de GetIt et services critiques.
-    // Ceci lèvera une erreur si GetIt n'est pas initialisé du tout, ou si CurrentUserService
-    // n'a pas été initialisé correctement dans main().
-    final currentUserService = getIt<CurrentUserService>(); // Accès à CurrentUserService via GetIt
-    final pairingService = getIt<PairingService>(); // Accès à PairingService via GetIt (qui dépend de RecipientService et potentiellement FirestoreService)
-    debugLog("🖙 [MAIN - BG NOTIF CLICK] GetIt et services essentiels semblent initialisés.", level: 'DEBUG');
-
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-      debugLog("🖙 [MAIN - BG NOTIF CLICK] Firebase initialisé dans le handler.", level: 'INFO');
+      debugLog("🖙 [MAIN - BG NOTIF CLICK] Firebase initialisé dans le handler (terminé).", level: 'INFO');
     }
+
+    // Initialiser GetIt et les services si ce n'est pas déjà fait.
+    // On peut vérifier si GetIt est enregistré, ou si un service clé est enregistré.
+    // L'important est d'appeler setupLocator() SI nécessaire.
+    if (!getIt.isRegistered<CurrentUserService>()) { // Vérifie si un service clé est enregistré pour juger si GetIt est "prêt"
+      debugLog("🖙 [MAIN - BG NOTIF CLICK] GetIt non configuré ou services non enregistrés. Appel de setupLocator().", level: 'INFO');
+      setupLocator();
+      // Une fois setupLocator() appelé, nous devons nous assurer que les LazySingleton
+      // comme CurrentUserService sont bien instanciés et initialisés si on va les utiliser.
+      // Un simple getIt<CurrentUserService>() suffit à forcer l'initialisation si c'est un LazySingleton.
+      getIt<CurrentUserService>(); // Force l'initialisation de CurrentUserService
+      debugLog("🖙 [MAIN - BG NOTIF CLICK] GetIt et services essentiels configurés et initialisés.", level: 'INFO');
+    } else {
+      debugLog("🖙 [MAIN - BG NOTIF CLICK] GetIt et services essentiels déjà initialisés.", level: 'DEBUG');
+    }
+
   } catch (e) {
-    debugLog("❌ [MAIN - BG NOTIF CLICK] Erreur lors de l'initialisation requise (Firebase ou GetIt/Services) : $e", level: 'ERROR');
-    // Si Firebase ou GetIt/Services ne s'initialisent pas, nous ne pouvons pas charger les données ou naviguer, on s'arrête ici.
+    debugLog("❌ [MAIN - BG NOTIF CLICK] Erreur critique lors de l'initialisation requise (Firebase ou GetIt/Services) : $e", level: 'ERROR');
+    // Si Firebase ou GetIt/Services ne s'initialisent pas, l'application ne peut pas fonctionner.
+    // Il faut sortir prématurément, l'app restera sur un écran blanc ou crashera si l'OS le permet.
     return; // Sortie précoce
   }
 
-  final String? senderUid = notificationResponse.payload; // Le payload de la notification locale est l'UID de l'expéditeur
+  // --- ÉTAPE 2 : Déléguer la navigation à NotificationRouter ---
+  // Toute la logique complexe de navigation est déjà dans NotificationRouter.
+  // Ce handler ne fait qu'extraire le payload et le passer au routeur.
+  final String? senderUid = notificationResponse.payload;
 
-  // S'assurer que le payload contient bien un UID valide et que l'utilisateur actuel est connecté.
-  // Pour un lancement depuis l'état terminé via ce handler, l'utilisateur DEVRAIT être connecté (sinon LoginScreen s'affiche en premier),
-  // mais une vérification est plus robuste.
-  final User? currentUser = FirebaseAuth.instance.currentUser;
-
-  if (senderUid != null && senderUid.isNotEmpty && currentUser != null && currentUser.uid != senderUid) {
-    debugLog('➡️ [MAIN - BG NOTIF CLICK] Tentative de navigation vers conversation avec $senderUid via services...', level: 'INFO'); // ✅ MODIF log
-
-    // ✅ MODIF V021 : Obtenir les données de l'utilisateur actuel depuis CurrentUserService
-    // CurrentUserService est maintenant garanti d'être initialisé par main() à ce stade.
-    final CurrentUserService currentUserService = getIt<CurrentUserService>(); // Accédé ici pour clarté, mais déjà vérifié dans try/catch initial.
-    final UserProfile? currentUserProfile = currentUserService.userProfile;
-
-    if (currentUserProfile == null) {
-      debugLog('⚠️ [MAIN - BG NOTIF CLICK] Profil utilisateur actuel non chargé dans CurrentUserService. Impossible de naviguer post-notification.', level: 'WARNING');
-      // Le profil utilisateur devrait être chargé par CurrentUserService au moment où l'utilisateur est connecté.
-      // Si CurrentUserService n'a pas encore chargé le profil, il y a potentiellement un problème d'initialisation
-      // ou de synchronisation. Dans un MVP, naviguer par défaut peut être acceptable.
-      getIt<GlobalKey<NavigatorState>>().currentState?.pushReplacementNamed('/'); // Navigation par défaut
-      // TODO: Gérer ce cas d'erreur plus finement (ex: attendre le chargement du profil, afficher un message) (Étape 6.3.2 - lié au NotificationRouter)
-      return; // Sortie précoce si le profil utilisateur n'est pas disponible
-    }
-
-    // ✅ MODIF V021 : Obtenir isReceiver et deviceLang depuis currentUserProfile
-    final String currentUserDeviceLang = currentUserProfile.deviceLang; // Utilise la langue du profil
-    final bool currentUserIsReceiver = currentUserProfile.isReceiver; // Utilise le rôle du profil
-
-    // ✅ AJOUT V021 : Charger les détails du destinataire via PairingService (qui utilise RecipientService)
-    Recipient? recipientDetails; // Initialise à null
-
-    try {
-      // Utilise le service PairingService pour charger les détails du destinataire.
-      // PairingService est maintenant garanti d'être initialisé par main().
-      // PairingService.getRecipientData utilise RecipientService.getRecipient en interne.
-      final pairingService = getIt<PairingService>(); // Accès à PairingService via GetIt
-      recipientDetails = await pairingService.getRecipientData(currentUser.uid, senderUid);
-
-      debugLog("✅ [MAIN - BG NOTIF CLICK] Détails destinataire ($senderUid) chargés via PairingService (qui utilise RecipientService).", level: 'INFO'); // ✅ MODIF log
-
-    } catch (e) {
-      debugLog("❌ [MAIN - BG NOTIF CLICK] Erreur lors du chargement des détails du destinataire ($senderUid) via PairingService : $e", level: 'ERROR'); // ✅ MODIF log
-      recipientDetails = null; // S'assurer que recipientDetails est null en cas d'erreur
-      // TODO: Gérer l'erreur (afficher un message à l'utilisateur, naviguer vers l'écran principal?) (Étape 6.3.1 - lié au NotificationRouter)
-      // Utilise le NavigatorKey global via getIt pour naviguer en cas d'erreur
-      getIt<GlobalKey<NavigatorState>>().currentState?.pushReplacementNamed('/'); // Exemple de navigation d'erreur
-      return; // Sortie précoce si le destinataire ne peut pas être chargé
-    }
-
-    // Naviguer si les details du destinataire sont trouvés.
-    if (recipientDetails != null) {
-      // Utilise le navigatorKey global via getIt pour naviguer.
-      // Utiliser Future.delayed(Duration.zero) est une bonne pratique pour s'assurer
-      // que la navigation est poussée après que l'UI initiale potentielle (comme un SplashScreen)
-      // soit rendue, mais AVANT que le reste de l'app ne soit complètement chargé.
-      Future.delayed(Duration.zero, () {
-        // ⛔️ À supprimer - accès direct à navigatorKey - remplacé par getIt - 2025/06/12
-        // navigatorKey.currentState?.push(MaterialPageRoute(
-        getIt<GlobalKey<NavigatorState>>().currentState?.push(MaterialPageRoute(
-          builder: (context) => RecipientDetailsScreen(
-            deviceLang: currentUserDeviceLang, // Langue - lue depuis CurrentUserService
-            recipient: recipientDetails!, // Objet Recipient chargé
-            isReceiver: currentUserIsReceiver, // Rôle de l'utilisateur actuel - lu depuis CurrentUserService
-          ),
-        ));
-        debugLog("➡️ [MAIN - BG NOTIF CLICK] Navigation vers RecipientDetailsScreen réussie pour UID destinataire $senderUid", level: 'INFO');
-      });
-
-
-    } else {
-      debugLog("⚠️ [MAIN - BG NOTIF CLICK] Navigation vers RecipientDetailsScreen annulée car détails destinataire non chargés ou introuvables.", level: 'WARNING');
-      // Optionnel : Naviguer vers l'écran principal si la navigation ciblée échoue
-      // Future.delayed(Duration.zero, () {
-      //   navigatorKey.currentState?.pushReplacementNamed('/');
-      // });
-    }
-
+  if (senderUid != null && senderUid.isNotEmpty) {
+    debugLog('➡️ [MAIN - BG NOTIF CLICK] Délégation de la navigation à NotificationRouter pour senderId: $senderUid', level: 'INFO');
+    // Construire le Map attendu par NotificationRouter.routeFromNotification
+    final Map<String, dynamic> notificationData = {
+      'senderId': senderUid,
+      // Si d'autres données étaient nécessaires du payload, elles seraient ajoutées ici
+    };
+    await NotificationRouter.routeFromNotification(notificationData);
+    debugLog("✅ [MAIN - BG NOTIF CLICK] Navigation déléguée à NotificationRouter terminée.", level: 'INFO');
   } else {
-    // Cas où senderUid est invalide, currentUser est null, ou clic sur sa propre notification
-    if (currentUser == null) {
-      debugLog("⚠️ [MAIN - BG NOTIF CLICK] Utilisateur actuel null. Impossible de naviguer post-notification locale.", level: 'WARNING');
-      // Le flux normal de l'app devrait ramener l'utilisateur à l'écran de connexion via le StreamBuilder.
-    } else if (senderUid == null || senderUid.isEmpty) {
-      debugLog('⚠️ [MAIN - BG NOTIF CLICK] Payload senderId manquant ou invalide dans la réponse de notification. Pas de navigation ciblée.', level: 'WARNING');
-      // L'app continuera son flux normal.
-    } else if (currentUser.uid == senderUid) {
-      debugLog("⚠️ [MAIN - BG NOTIF CLICK] Clic sur notification de soi-même ($senderUid). Pas de navigation ciblée.", level: 'INFO');
-      // Ne rien faire ou naviguer vers l'écran principal.
-      // Future.delayed(Duration.zero, () {
-      //   navigatorKey.currentState?.pushReplacementNamed('/');
-      // });
-    }
+    debugLog('⚠️ [MAIN - BG NOTIF CLICK] Payload senderId manquant ou invalide dans la réponse de notification. Pas de navigation ciblée.', level: 'WARNING');
+    // Si le payload est invalide, naviguer par défaut vers l'écran principal.
+    getIt<GlobalKey<NavigatorState>>().currentState?.pushReplacementNamed('/');
   }
+  // Pas besoin de 'return Future<void>.value();' ici car la fonction est asynchrone et atteint naturellement sa fin.
 }
 
-// --- FIN   DU BLOC 12 ---
+// --- FIN   DU BLOC 12 (REVISÉ) ---
 
 // =============================================================
 // 🎯 TODO REFAC : Découpler les responsabilités de main.dart

@@ -64,7 +64,6 @@ class PairingService {
       final userBDisplayName = userBSnap.exists ? (userBSnap.data()?['firstName'] ?? 'Utilisateur B') : 'Utilisateur B'; // Nom de userB pour userA
       debugLog("✅ [PairingService] Nom d'affichage User B ($userBId) : $userBDisplayName", level: 'DEBUG');
 
-
       // 1. Ajouter/Mettre à jour le document destinataire chez l'utilisateur A pour userB
       // Chemin : users/{userAId}/recipients/{userBId}
       final recipientAtoBRef = _firestore
@@ -87,7 +86,6 @@ class PairingService {
       }, SetOptions(merge: true));
       debugLog("✅ [PairingService] Préparation batch: document recipient A->B ($userAId -> $userBId)", level: 'DEBUG');
 
-
       // 2. Ajouter/Mettre à jour le document destinataire chez l'utilisateur B pour userA
       // Chemin : users/{userBId}/recipients/{userAId}
       final recipientBtoARef = _firestore
@@ -109,7 +107,6 @@ class PairingService {
         // On utilise SetOptions(merge: true)
       }, SetOptions(merge: true));
       debugLog("✅ [PairingService] Préparation batch: document recipient B->A ($userBId -> $userAId)", level: 'DEBUG');
-
 
       // Exécuter le batch
       await batch.commit();
@@ -162,7 +159,6 @@ class PairingService {
       rethrow; // Relancer l'exception
     }
   } // <-- Fin de la fonction unpairUsers
-
 
   // =============================================================
   // 🔍 APPAIRAGE — Vérifier si un utilisateur est appairé avec un partenaire spécifique
@@ -252,8 +248,6 @@ class PairingService {
     }
   } // <-- Fin de la fonction getRecipientData
 
-
 } // <-- Fin de la classe PairingService
-
 
 // 📄 FIN de lib/services/pairing_service.dart
